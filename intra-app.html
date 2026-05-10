@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intra-App — Sprint Backlog</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f7fa;
+    --bg-tertiary: #eef1f5;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-tertiary: #94a3b8;
+    --border: rgba(15,23,42,0.10);
+    --border-md: rgba(15,23,42,0.18);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --indigo-50: #EEF2FF; --indigo-600: #4F46E5; --indigo-800: #3730A3; --indigo-900: #1E1B4B;
+    --emerald-50: #D1FAE5; --emerald-600: #059669; --emerald-800: #065F46;
+    --amber-50: #FEF3C7; --amber-600: #B45309; --amber-800: #78350F;
+    --rose-50: #FFE4E6; --rose-600: #E11D48; --rose-800: #9F1239;
+    --sky-50: #E0F2FE; --sky-800: #075985;
+    --slate-50: #F1F5F9; --slate-800: #1E293B;
+    --violet-50: #EDE9FE; --violet-800: #5B21B6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #0f172a; --bg-secondary: #1e293b; --bg-tertiary: #0a1120;
+      --text-primary: #e2e8f0; --text-secondary: #94a3b8; --text-tertiary: #64748b;
+      --border: rgba(255,255,255,0.08); --border-md: rgba(255,255,255,0.18);
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif; background: var(--bg-tertiary); color: var(--text-primary); font-size: 14px; line-height: 1.5; }
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar { width: 224px; min-width: 224px; background: var(--bg-primary); border-right: 0.5px solid var(--border); display: flex; flex-direction: column; }
+  .logo { padding: 18px 16px 14px; border-bottom: 0.5px solid var(--border); }
+  .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #4F46E5, #7C3AED); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(79,70,229,0.3); }
+  .logo-icon svg { width: 18px; height: 18px; }
+  .logo-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .logo-sub { font-size: 11px; color: var(--text-tertiary); }
+  .nav { flex: 1; padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+  .nav-section { font-size: 10px; color: var(--text-tertiary); padding: 12px 8px 4px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-md); cursor: pointer; font-size: 13px; color: var(--text-secondary); background: none; border: none; width: 100%; text-align: left; transition: background 0.15s; font-family: inherit; }
+  .nav-item:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .nav-item.active { background: var(--indigo-50); color: var(--indigo-800); font-weight: 600; }
+  .nav-item .ico { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .nav-badge { margin-left: auto; background: var(--indigo-600); color: #fff; font-size: 10px; border-radius: 10px; padding: 1px 7px; font-weight: 600; min-width: 20px; text-align: center; }
+  .nav-badge.red { background: #E11D48; }
+  .sidebar-footer { padding: 12px 8px; border-top: 0.5px solid var(--border); }
+  .data-status { padding: 8px 10px; border-radius: var(--radius-md); background: var(--bg-secondary); font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; }
+  .data-status .ds-row { display:flex; align-items:center; gap:6px; }
+  .data-status .ds-dot { width:6px; height:6px; border-radius:50%; background:#10B981; flex-shrink:0; }
+  .data-status .ds-dot.warn { background:#F59E0B; }
+  .data-status .ds-dot.err { background:#EF4444; }
+  .data-status .ds-name { font-weight:600; color: var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .data-status .ds-meta { color: var(--text-tertiary); font-size:10px; margin-top:2px; }
+  .profile-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--radius-md); }
+  .profile-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--indigo-50); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: var(--indigo-800); flex-shrink: 0; }
+  .profile-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .profile-role { font-size: 11px; color: var(--text-tertiary); }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { height: 56px; background: var(--bg-primary); border-bottom: 0.5px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 12px; flex-shrink: 0; }
+  .topbar-title { font-size: 15px; font-weight: 600; color: var(--text-primary); flex: 1; }
+  .topbar-search { display: flex; align-items: center; gap: 8px; background: var(--bg-secondary); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 6px 12px; width: 220px; }
+  .topbar-search input { border: none; background: none; font-size: 13px; color: var(--text-primary); outline: none; width: 100%; font-family: inherit; }
+  .topbar-search input::placeholder { color: var(--text-tertiary); }
+  .content { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-md); font-size: 13px; cursor: pointer; border: 0.5px solid var(--border-md); background: var(--bg-primary); color: var(--text-primary); font-weight: 500; transition: background 0.15s; font-family: inherit; }
+  .btn:hover { background: var(--bg-secondary); }
+  .btn-primary { background: var(--indigo-600); color: #fff; border-color: var(--indigo-600); }
+  .btn-primary:hover { background: var(--indigo-800); border-color: var(--indigo-800); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* CARDS */
+  .card { background: var(--bg-primary); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .card-link { font-size: 12px; color: var(--indigo-600); cursor: pointer; background: none; border: none; font-family: inherit; }
+  .card-link:hover { text-decoration: underline; }
+
+  /* KPI */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+  .kpi-card { background: var(--bg-primary); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+  .kpi-card:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(15,23,42,0.06); }
+  .kpi-label { font-size: 11px; color: var(--text-tertiary); margin-bottom: 6px; font-weight: 500; }
+  .kpi-value { font-size: 28px; font-weight: 600; color: var(--text-primary); line-height: 1; letter-spacing: -0.02em; }
+  .kpi-sub { font-size: 11px; color: var(--text-tertiary); margin-top: 6px; }
+  .kpi-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* BADGES */
+  .badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; white-space: nowrap; }
+  .estado { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+  .e-proceso { background: var(--emerald-50); color: var(--emerald-800); }
+  .e-progreso { background: var(--sky-50); color: var(--sky-800); }
+  .e-pendiente { background: var(--amber-50); color: var(--amber-800); }
+  .e-listo { background: var(--slate-50); color: var(--slate-800); }
+  .e-urgente { background: var(--rose-50); color: var(--rose-800); }
+
+  /* ALERT ITEMS */
+  .alert-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .alert-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .alert-text { font-size: 13px; color: var(--text-primary); line-height: 1.4; }
+  .alert-meta { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; line-height: 1.35; }
+
+  /* CASE ITEMS */
+  .case-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--border); cursor: pointer; }
+  .case-item:last-child { border-bottom: none; }
+  .case-item:hover .case-title { color: var(--indigo-600); }
+  .case-avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+  .av-indigo { background: var(--indigo-50); color: var(--indigo-800); }
+  .av-emerald { background: var(--emerald-50); color: var(--emerald-800); }
+  .av-amber { background: var(--amber-50); color: var(--amber-800); }
+  .av-rose { background: var(--rose-50); color: var(--rose-800); }
+  .av-sky { background: var(--sky-50); color: var(--sky-800); }
+  .av-violet { background: var(--violet-50); color: var(--violet-800); }
+  .case-info { flex: 1; min-width: 0; }
+  .case-title { font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .case-client { font-size: 11px; color: var(--text-tertiary); }
+
+  /* CHART BARS */
+  .chart-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .chart-bar-row:last-child { margin-bottom: 0; }
+  .chart-bar-label { font-size: 12px; color: var(--text-secondary); width: 110px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chart-bar-track { flex: 1; height: 8px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden; }
+  .chart-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+  .chart-bar-num { font-size: 12px; color: var(--text-secondary); width: 28px; text-align: right; font-weight: 500; }
+
+  /* TASKS */
+  .task-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .task-item:last-child { border-bottom: none; }
+  .task-check { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--border-md); flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .task-check.done { background: var(--indigo-600); border-color: var(--indigo-600); }
+  .task-text { flex: 1; font-size: 13px; color: var(--text-primary); cursor: pointer; }
+  .task-text.done { text-decoration: line-through; color: var(--text-tertiary); }
+  .task-due { font-size: 11px; color: var(--text-tertiary); font-weight: 500; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  th { text-align: left; font-size: 11px; font-weight: 600; color: var(--text-tertiary); padding: 10px 14px; border-bottom: 0.5px solid var(--border); white-space: nowrap; text-transform: uppercase; letter-spacing: 0.04em; }
+  td { padding: 11px 14px; border-bottom: 0.5px solid var(--border); color: var(--text-primary); vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg-secondary); }
+  tr[data-clickable] { cursor: pointer; }
+
+  /* PILLS */
+  .pill-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .pill { padding: 5px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 0.5px solid var(--border-md); background: var(--bg-primary); color: var(--text-secondary); transition: all 0.15s; font-family: inherit; }
+  .pill:hover { background: var(--bg-secondary); }
+  .pill.active { background: var(--indigo-600); color: #fff; border-color: var(--indigo-600); }
+  .tabs-bar { display: flex; gap: 0; background: var(--bg-primary); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 3px; width: fit-content; }
+  .tab { padding: 7px 16px; font-size: 13px; border-radius: 6px; cursor: pointer; color: var(--text-secondary); border: none; background: none; font-weight: 400; font-family: inherit; }
+  .tab.active { background: var(--bg-secondary); color: var(--text-primary); font-weight: 600; }
+
+  /* VIEWS */
+  .view { display: none; }
+  .view.active { display: flex; flex-direction: column; gap: 16px; }
+
+  /* CASE DETAIL */
+  .back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; padding: 6px 0; border: none; background: none; font-family: inherit; }
+  .back-btn:hover { color: var(--text-primary); }
+  .case-detail-header { background:var(--bg-primary); border:0.5px solid var(--border); border-radius:var(--radius-lg); padding:20px 24px; }
+  .case-badge-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .info-grid { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px; margin-top:16px; padding-top:16px; border-top:0.5px solid var(--border); }
+  .info-item { padding-right: 14px; border-right: 0.5px solid var(--border); }
+  .info-item:last-child { border-right: none; padding-right: 0; }
+  .info-label { font-size:10px; color:var(--text-tertiary); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em; font-weight: 600; }
+  .info-value { font-size:13px; color:var(--text-primary); font-weight:500; line-height:1.4; }
+  .info-value.link-val { color:var(--indigo-600); cursor:pointer; word-break: break-all; }
+  .info-value.link-val:hover { text-decoration: underline; }
+  .prose-block { background:var(--bg-secondary); border-radius:var(--radius-md); padding:14px 16px; font-size:13px; color:var(--text-secondary); line-height:1.7; white-space:pre-wrap; }
+  .prose-block.urgente { border-left:3px solid #E11D48; }
+  .prose-block.alta { border-left:3px solid #F59E0B; }
+  .prose-block.media { border-left:3px solid var(--indigo-600); }
+  .task-list-item { display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:0.5px solid var(--border); }
+  .task-list-item:last-child { border-bottom:none; }
+  .task-num { width:22px; height:22px; border-radius:50%; background:var(--indigo-50); color:var(--indigo-800); font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+  .task-num.done { background:var(--emerald-50); color:var(--emerald-800); }
+  .task-list-text { flex:1; font-size:13px; color:var(--text-primary); line-height:1.5; }
+  .resp-pill { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:var(--indigo-50); border-radius:var(--radius-md); font-size:13px; color:var(--indigo-800); font-weight:600; }
+  .resp-avatar { width:24px; height:24px; border-radius:50%; background:var(--indigo-600); color:#fff; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+  /* MODAL — load source */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.4); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--bg-primary); border-radius: var(--radius-lg); padding: 24px; max-width: 540px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
+  .modal h2 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .modal p.modal-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+  .source-tabs { display: flex; gap: 4px; padding: 3px; background: var(--bg-secondary); border-radius: var(--radius-md); margin-bottom: 16px; }
+  .source-tab { flex: 1; padding: 8px; font-size: 12px; border: none; background: none; cursor: pointer; border-radius: 6px; color: var(--text-secondary); font-weight: 500; font-family: inherit; }
+  .source-tab.active { background: var(--bg-primary); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+  .source-panel { display: none; }
+  .source-panel.active { display: block; }
+  .drop-zone { border: 1.5px dashed var(--border-md); border-radius: var(--radius-md); padding: 32px 20px; text-align: center; cursor: pointer; transition: background 0.15s; }
+  .drop-zone:hover, .drop-zone.dragover { background: var(--indigo-50); border-color: var(--indigo-600); }
+  .drop-zone-icon { width: 40px; height: 40px; margin: 0 auto 10px; color: var(--indigo-600); }
+  .drop-zone-text { font-size: 14px; color: var(--text-primary); font-weight: 500; }
+  .drop-zone-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+  .url-input { width: 100%; padding: 10px 12px; border: 0.5px solid var(--border-md); border-radius: var(--radius-md); font-size: 13px; background: var(--bg-primary); color: var(--text-primary); font-family: inherit; outline: none; }
+  .url-input:focus { border-color: var(--indigo-600); }
+  .url-help { font-size: 11px; color: var(--text-tertiary); margin-top: 8px; line-height: 1.5; }
+  .url-help code { background: var(--bg-secondary); padding: 1px 6px; border-radius: 4px; font-size: 11px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+  .modal-error { background: var(--rose-50); color: var(--rose-800); padding: 8px 12px; border-radius: var(--radius-md); font-size: 12px; margin-top: 12px; display: none; }
+  .modal-error.show { display: block; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-tertiary); }
+  .empty-state svg { width: 48px; height: 48px; margin-bottom: 16px; color: var(--text-tertiary); }
+  .empty-state-title { font-size: 16px; color: var(--text-primary); font-weight: 600; margin-bottom: 6px; }
+  .empty-state-text { font-size: 13px; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 18 18" fill="none"><path d="M5 4l-3 5 3 5M13 4l3 5-3 5M11 3l-4 12" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="logo-title">Codeshift Labs</div>
+      <div class="logo-sub">Intra-App — Dev Team II</div>
+    </div>
+    <div class="nav">
+      <div class="nav-section">Principal</div>
+      <button class="nav-item active" id="nav-dashboard" onclick="showView('dashboard')">
+        <span class="ico"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1.5" fill="currentColor" opacity=".8"/><rect x="8" y="1" width="5" height="5" rx="1.5" fill="currentColor" opacity=".8"/><rect x="1" y="8" width="5" height="5" rx="1.5" fill="currentColor" opacity=".8"/><rect x="8" y="8" width="5" height="5" rx="1.5" fill="currentColor" opacity=".8"/></svg></span>
+        Dashboard
+      </button>
+      <button class="nav-item" id="nav-clientes" onclick="showView('clientes')">
+        <span class="ico"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M1.5 12c0-2.5 2.5-4 5.5-4s5.5 1.5 5.5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+        Clientes
+        <span class="nav-badge" id="badge-clientes">0</span>
+      </button>
+      <button class="nav-item" id="nav-tickets" onclick="showView('tickets')">
+        <span class="ico"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M4.5 5h5M4.5 7.5h5M4.5 10h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>
+        Tickets
+        <span class="nav-badge" id="badge-tickets">0</span>
+      </button>
+      <button class="nav-item" id="nav-deadlines" onclick="showView('deadlines')">
+        <span class="ico"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7 4v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+        Plazos
+        <span class="nav-badge red" id="badge-deadlines">0</span>
+      </button>
+      <button class="nav-item" id="nav-tareas" onclick="showView('tareas')">
+        <span class="ico"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M4.5 7l2 2 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        Tareas
+      </button>
+      <div class="nav-section">Gestión</div>
+      <button class="nav-item" id="nav-equipo" onclick="showView('equipo')">
+        <span class="ico"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><circle cx="10" cy="5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M1 12c0-2 1.8-3 4-3s4 1 4 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10.5 9c1.5 0 2.5.8 2.5 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>
+        Equipo
+      </button>
+      <button class="nav-item" id="nav-areas" onclick="showView('areas')">
+        <span class="ico"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 4l5-2.5L12 4v6L7 12.5 2 10V4z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M7 1.5v11M2 4l5 2.5L12 4" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        Áreas
+      </button>
+      <div class="nav-section">Datos</div>
+      <button class="nav-item" id="nav-source" onclick="openSourceModal()">
+        <span class="ico"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v9M3.5 6.5L7 10l3.5-3.5M2 12.5h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        Recargar XLSX
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <div class="data-status" id="data-status">
+        <div class="ds-row"><div class="ds-dot"></div><div class="ds-name" id="ds-name">Sin fuente</div></div>
+        <div class="ds-meta" id="ds-meta">Cargando...</div>
+      </div>
+      <div class="profile-row">
+        <div class="profile-avatar">CL</div>
+        <div>
+          <div class="profile-name">Codeshift Labs</div>
+          <div class="profile-role">Engineering Lead</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="view-title">Dashboard</div>
+      <div class="topbar-search">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="#94a3b8" stroke-width="1.3"/><path d="M9 9l2.5 2.5" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <input id="search-input" placeholder="Buscar tickets, clientes...">
+      </div>
+      <button class="btn" onclick="openSourceModal()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Cargar XLSX
+      </button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="view-dashboard" class="view active content">
+      <div class="kpi-grid" id="kpi-grid"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Plazos próximos</span><button class="card-link" onclick="showView('deadlines')">Ver todos →</button></div>
+          <div id="dash-deadlines"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Tickets urgentes</span><button class="card-link" onclick="showView('tickets')">Ver todos →</button></div>
+          <div id="dash-urgent"></div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Pendientes por área</span></div>
+          <div id="dash-areas"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Top clientes activos</span><button class="card-link" onclick="showView('clientes')">Ver todos →</button></div>
+          <div id="dash-clients"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div id="view-clientes" class="view content">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Clientes</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th style="width:40%">Cliente</th>
+              <th style="width:15%">Tickets</th>
+              <th style="width:15%">Urgentes</th>
+              <th style="width:20%">Áreas</th>
+              <th style="width:10%"></th>
+            </tr></thead>
+            <tbody id="clients-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TICKETS -->
+    <div id="view-tickets" class="view content">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Todos los tickets</span>
+          <div class="pill-row" id="tickets-filters">
+            <button class="pill active" data-filter="all">Todos</button>
+            <button class="pill" data-filter="URGENTE">Urgente</button>
+            <button class="pill" data-filter="ALTA">Alta</button>
+            <button class="pill" data-filter="MEDIA">Media</button>
+            <button class="pill" data-filter="BAJA">Baja</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th style="width:6%">N°</th>
+              <th style="width:22%">Cliente</th>
+              <th style="width:30%">Asunto</th>
+              <th style="width:12%">Área</th>
+              <th style="width:11%">Responsable</th>
+              <th style="width:9%">Estado</th>
+              <th style="width:10%">Prioridad</th>
+            </tr></thead>
+            <tbody id="tickets-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEADLINES -->
+    <div id="view-deadlines" class="view content">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Plazos por fecha límite</span></div>
+        <div id="deadlines-list"></div>
+      </div>
+    </div>
+
+    <!-- TAREAS -->
+    <div id="view-tareas" class="view content">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Tareas en curso</span></div>
+        <div id="tareas-list"></div>
+      </div>
+    </div>
+
+    <!-- EQUIPO -->
+    <div id="view-equipo" class="view content">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Carga del equipo</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th style="width:30%">Miembro</th>
+              <th style="width:18%">Tickets asignados</th>
+              <th style="width:18%">Urgentes</th>
+              <th style="width:34%">Distribución por área</th>
+            </tr></thead>
+            <tbody id="team-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AREAS -->
+    <div id="view-areas" class="view content">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Distribución por área (Carpeta)</span></div>
+        <div id="areas-detail"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Distribución por equipo (Área)</span></div>
+        <div id="areas-team"></div>
+      </div>
+    </div>
+
+    <!-- TICKET DETAIL -->
+    <div id="view-ticket-detail" class="view content">
+      <button class="back-btn" onclick="showView(window._previousView || 'tickets')">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2L3.5 6l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="back-label">Volver</span>
+      </button>
+      <div class="case-detail-header">
+        <div class="case-badge-row">
+          <span class="badge" id="td-cliente-badge" style="background:var(--indigo-50);color:var(--indigo-800)">Cliente</span>
+          <span class="badge" id="td-carpeta-badge" style="background:var(--violet-50);color:var(--violet-800)">Carpeta</span>
+          <span class="estado e-proceso" id="td-estado-badge">Estado</span>
+          <span class="estado" id="td-prioridad-badge" style="background:var(--rose-50);color:var(--rose-800)">Prioridad</span>
+        </div>
+        <div style="font-size: 18px; font-weight: 600; color: var(--text-primary); line-height: 1.3; margin-bottom: 6px; white-space: pre-wrap;" id="td-asunto">—</div>
+        <div style="font-size: 12px; color: var(--text-tertiary);">Ticket #<span id="td-num">—</span> · Área <span id="td-area">—</span></div>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Solicitud</div>
+            <div class="info-value" id="td-fecha-sol">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Fecha límite</div>
+            <div class="info-value" id="td-fecha-lim">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Modalidad</div>
+            <div class="info-value" id="td-horario">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Responsable</div>
+            <div class="info-value">
+              <span class="resp-pill"><span class="resp-avatar" id="td-resp-avatar">—</span><span id="td-resp">—</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Hechos</span></div>
+          <div class="prose-block" id="td-hechos">—</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Procedimiento</span></div>
+          <div class="prose-block" id="td-proc">—</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Pasos</span></div>
+        <div id="td-tasks-list"></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Referencia técnica</span></div>
+          <a class="info-value link-val" id="td-link" href="#" target="_blank" rel="noopener">—</a>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Observaciones</span></div>
+          <div class="prose-block" id="td-obs" style="white-space: pre-wrap;">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENT DETAIL -->
+    <div id="view-cliente-detalle" class="view content">
+      <button class="back-btn" onclick="showView('clientes')">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2L3.5 6l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Volver a clientes
+      </button>
+      <div class="case-detail-header">
+        <div style="font-size: 22px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;" id="cd-name">—</div>
+        <div style="font-size: 13px; color: var(--text-tertiary);" id="cd-summary">—</div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Tickets de este cliente</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th style="width:6%">N°</th>
+              <th style="width:42%">Asunto</th>
+              <th style="width:14%">Carpeta</th>
+              <th style="width:12%">Responsable</th>
+              <th style="width:12%">Estado</th>
+              <th style="width:14%">Prioridad</th>
+            </tr></thead>
+            <tbody id="cd-tickets-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: source loader -->
+  <div class="modal-overlay" id="source-modal">
+    <div class="modal">
+      <h2>Cargar archivo de tickets</h2>
+      <p class="modal-sub">El archivo XLSX debe tener la estructura del backlog. Tres formas de cargarlo:</p>
+      <div class="source-tabs">
+        <button class="source-tab active" data-srctab="upload">Subir archivo</button>
+        <button class="source-tab" data-srctab="url">Desde URL</button>
+        <button class="source-tab" data-srctab="path">Ruta local</button>
+      </div>
+      <div class="source-panel active" id="srcp-upload">
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+          <svg class="drop-zone-icon" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M6 10l6-6 6 6M4 20h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="drop-zone-text">Arrastra el archivo XLSX aquí</div>
+          <div class="drop-zone-sub">o haz clic para seleccionarlo</div>
+          <input type="file" id="file-input" accept=".xlsx,.xlsm,.xls" style="display:none">
+        </div>
+      </div>
+      <div class="source-panel" id="srcp-url">
+        <input type="text" class="url-input" id="url-input" placeholder="https://drive.google.com/uc?export=download&id=...">
+        <div class="url-help">
+          <strong>Google Drive:</strong> abre el archivo, comparte como "Cualquiera con el enlace", copia el ID y úsalo así:
+          <br><code>https://drive.google.com/uc?export=download&id=TU_FILE_ID</code>
+          <br><br>
+          También funciona con Dropbox (cambiar <code>?dl=0</code> por <code>?dl=1</code>) o cualquier URL pública con CORS habilitado.
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-primary" onclick="loadFromUrl()">Cargar</button>
+        </div>
+      </div>
+      <div class="source-panel" id="srcp-path">
+        <input type="text" class="url-input" id="path-input" value="./SOFTWARE_DEV_TASKS_-_Sprint_Backlog.xlsx">
+        <div class="url-help">
+          Si el HTML y el XLSX están en la misma carpeta del proyecto (servidos por un servidor local o subidos juntos), esta ruta relativa funcionará.
+          <br><br>
+          <strong>Tip:</strong> en el directorio del proyecto ejecuta <code>python3 -m http.server 8000</code> y abre <code>http://localhost:8000</code>.
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-primary" onclick="loadFromPath()">Cargar</button>
+        </div>
+      </div>
+      <div class="modal-error" id="modal-error"></div>
+      <div class="modal-actions">
+        <button class="btn" onclick="useSampleData()">Usar datos de ejemplo</button>
+        <button class="btn" onclick="closeSourceModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ====================== EMBEDDED SAMPLE DATA ======================
+// Snapshot of the XLSX exactly as generated; used as fallback when no live file is loaded.
+const SAMPLE_DATA = [{"n": 1, "cliente": "FINTECH NOVA S.A.C.", "carpeta": "DESARROLLO", "fecha_solicitud": "2026-04-10", "responsable_pm": "ANDREA", "accion": "HACER", "asunto": "Implementar autenticación OAuth 2.0 para API de pagos\nMódulo: payments-gateway-v2", "hechos": "1. Cliente requiere migrar de API keys a OAuth 2.0\n2. Necesario para certificación PCI-DSS\n3. Integrar con Auth0\n4. Tests E2E pendientes", "procedimiento": "1. Revisar especificación RFC 6749\n2. Configurar tenant en Auth0\n3. Implementar flujo Authorization Code + PKCE\n4. Actualizar documentación OpenAPI", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-15", "horario": "OFICINA", "responsable": "DIEGO", "area": "ENGINEERING", "estado": "EN PROGRESO", "prioridad": "URGENTE", "link": "https://datatracker.ietf.org/doc/html/rfc6749", "observaciones": "Coordinar con equipo de seguridad antes del deploy a producción"}, {"n": 2, "cliente": "FINTECH NOVA S.A.C.", "carpeta": "SEGURIDAD", "fecha_solicitud": "2026-04-12", "responsable_pm": "ANDREA", "accion": "REVISAR", "asunto": "Auditoría OWASP Top 10 - portal de clientes\nFRONT-END: react-customer-portal", "hechos": "1. Cliente solicita pentest antes del lanzamiento\n2. Detectadas 3 vulnerabilidades XSS en sprint anterior\n3. Falta revisar cabeceras CSP", "procedimiento": "1. Aplicar checklist OWASP ASVS Level 2\n2. Configurar Content-Security-Policy\n3. Sanitizar inputs con DOMPurify\n4. Reportar findings", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-20", "horario": "TODO EL DIA", "responsable": "DIEGO", "area": "SECURITY", "estado": "PENDIENTE", "prioridad": "ALTA", "link": "https://owasp.org/www-project-top-ten/", "observaciones": "Generar reporte ejecutivo y técnico por separado"}, {"n": 3, "cliente": "RETAIL OMNI S.A.", "carpeta": "DEVOPS", "fecha_solicitud": "2026-03-28", "responsable_pm": "ANDREA", "accion": "HACER", "asunto": "Migración de infraestructura a AWS EKS\nClúster: prod-retail-omni-east1", "hechos": "1. Cliente quiere salir de servidores on-premise\n2. Estimación de ahorro: 32% en costos operativos\n3. Plan de migración en 3 fases\n4. Fase 1 completada", "procedimiento": "1. Provisionar VPC con Terraform\n2. Configurar EKS con eksctl\n3. Migrar workloads con velero\n4. Configurar HPA y Cluster Autoscaler", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-30", "horario": "OFICINA", "responsable": "MARTIN", "area": "DEVOPS", "estado": "EN PROCESO", "prioridad": "ALTA", "link": "https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html", "observaciones": "Mantener entorno legacy hasta estabilizar producción"}, {"n": 4, "cliente": "RETAIL OMNI S.A.", "carpeta": "QA / TESTING", "fecha_solicitud": "2026-04-05", "responsable_pm": "CAMILA", "accion": "HACER", "asunto": "Suite de pruebas automatizadas E2E con Playwright\nRepositorio: retail-omni-e2e-tests", "hechos": "1. Cobertura actual de QA manual: 78%\n2. Bugs en producción han aumentado 15%\n3. Regression suite tarda 6 horas en ejecutar manualmente", "procedimiento": "1. Migrar tests críticos de Cypress a Playwright\n2. Configurar paralelización en GitHub Actions\n3. Integrar reporte Allure\n4. Meta: ejecutar suite en <30 min", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-10", "horario": "OFICINA", "responsable": "VALERIA", "area": "QA", "estado": "EN PROGRESO", "prioridad": "MEDIA", "link": "https://playwright.dev/docs/intro", "observaciones": null}, {"n": 5, "cliente": "HEALTHTRACK SOLUTIONS", "carpeta": "DESARROLLO", "fecha_solicitud": "2026-03-15", "responsable_pm": "ANDREA", "accion": "REVISAR", "asunto": "Refactor del módulo de citas médicas\nMicroservicio: appointment-service", "hechos": "1. El servicio ha crecido a 8000 LOC\n2. Tiempos de respuesta P95 > 800ms\n3. Decisión: aplicar arquitectura hexagonal\n4. Domain-Driven Design", "procedimiento": "1. Identificar bounded contexts\n2. Extraer dominio puro (sin frameworks)\n3. Implementar puertos y adaptadores\n4. Mantener cobertura de tests >85%", "fecha_actual": "2026-05-09", "fecha_limite": "2026-06-05", "horario": "OFICINA", "responsable": "DIEGO", "area": "ENGINEERING", "estado": "EN PROGRESO", "prioridad": "MEDIA", "link": "https://martinfowler.com/articles/microservices.html", "observaciones": "Coordinar con product owner antes de cambios contractuales"}, {"n": 6, "cliente": "HEALTHTRACK SOLUTIONS", "carpeta": "DOCUMENTACION", "fecha_solicitud": "2026-04-18", "responsable_pm": "CAMILA", "accion": "HACER", "asunto": "Documentación API REST con OpenAPI 3.1\nEndpoints: /v2/patients, /v2/appointments", "hechos": "1. Cliente solicita documentación interactiva\n2. Equipo externo integrará el próximo trimestre\n3. Faltan ejemplos en 40% de endpoints", "procedimiento": "1. Anotar endpoints con springdoc-openapi\n2. Generar spec.yaml automáticamente\n3. Publicar Swagger UI en /docs\n4. Validar con spectral lint", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-12", "horario": "OFICINA", "responsable": "VALERIA", "area": "ENGINEERING", "estado": "PENDIENTE", "prioridad": "MEDIA", "link": "https://swagger.io/specification/", "observaciones": null}, {"n": 7, "cliente": "LOGISTICS PRO S.A.C.", "carpeta": "DESARROLLO", "fecha_solicitud": "2026-04-01", "responsable_pm": "ANDREA", "accion": "HACER", "asunto": "Implementar sistema de eventos con Apache Kafka\nTopic: shipment-status-events", "hechos": "1. Sistema actual usa polling cada 30s — ineficiente\n2. Cliente espera tracking en tiempo real\n3. Volumen: ~12k eventos/min en hora pico", "procedimiento": "1. Diseñar esquemas Avro en Schema Registry\n2. Configurar producers idempotentes\n3. Implementar consumers con retry y DLQ\n4. Monitoreo con Burrow", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-25", "horario": "TODO EL DIA", "responsable": "MARTIN", "area": "ENGINEERING", "estado": "EN PROGRESO", "prioridad": "ALTA", "link": "https://kafka.apache.org/documentation/", "observaciones": "Stack: Java 21 + Spring Boot 3.2 + Kafka Streams"}, {"n": 8, "cliente": "LOGISTICS PRO S.A.C.", "carpeta": "DEVOPS", "fecha_solicitud": "2026-04-22", "responsable_pm": "ANDREA", "accion": "REVISAR", "asunto": "Configurar pipeline CI/CD con GitHub Actions\nMonorepo: logistics-platform", "hechos": "1. Pipeline actual en Jenkins requiere mantenimiento constante\n2. Builds tardan 18 min — meta <8 min\n3. Cliente aprobó migración", "procedimiento": "1. Crear workflows reutilizables\n2. Cachear dependencias Maven y npm\n3. Implementar matrix builds\n4. Trivy scan en cada PR", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-18", "horario": "OFICINA", "responsable": "MARTIN", "area": "DEVOPS", "estado": "PENDIENTE", "prioridad": "MEDIA", "link": "https://docs.github.com/en/actions", "observaciones": null}, {"n": 9, "cliente": "EDUTECH PERÚ S.A.C.", "carpeta": "DESARROLLO", "fecha_solicitud": "2026-03-20", "responsable_pm": "CAMILA", "accion": "HACER", "asunto": "Frontend de plataforma de cursos con Next.js 14\nApp Router + Server Components", "hechos": "1. Cliente quiere SEO mejorado (clases públicas)\n2. Lighthouse score actual: 62 (Performance)\n3. Migración desde CRA", "procedimiento": "1. Migrar páginas a App Router\n2. Convertir componentes pesados a Server Components\n3. Implementar streaming con Suspense\n4. Optimizar imágenes con next/image", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-28", "horario": "OFICINA", "responsable": "VALERIA", "area": "ENGINEERING", "estado": "EN PROGRESO", "prioridad": "URGENTE", "link": "https://nextjs.org/docs/app", "observaciones": "Meta de Lighthouse Performance: 90+"}, {"n": 10, "cliente": "EDUTECH PERÚ S.A.C.", "carpeta": "QA / TESTING", "fecha_solicitud": "2026-04-14", "responsable_pm": "CAMILA", "accion": "REVISAR", "asunto": "Pruebas de carga con k6 — Black Friday\nEscenario: 50,000 usuarios concurrentes", "hechos": "1. Black Friday genera 8x el tráfico normal\n2. El año pasado el sistema cayó 23 minutos\n3. SLA acordado: 99.9% uptime", "procedimiento": "1. Diseñar escenarios realistas con k6\n2. Ejecutar smoke, load y stress tests\n3. Identificar cuellos de botella\n4. Producir reporte con Grafana", "fecha_actual": "2026-05-09", "fecha_limite": "2026-06-02", "horario": "TODO EL DIA", "responsable": "VALERIA", "area": "QA", "estado": "PENDIENTE", "prioridad": "ALTA", "link": "https://k6.io/docs/", "observaciones": "Coordinar ventana con SRE para no afectar producción"}, {"n": 11, "cliente": "BANCA DIGITAL ANDINA", "carpeta": "SEGURIDAD", "fecha_solicitud": "2026-04-08", "responsable_pm": "ANDREA", "accion": "HACER", "asunto": "Implementar 2FA con WebAuthn / FIDO2\nServicio: auth-service-v3", "hechos": "1. Regulación SBS exige autenticación reforzada\n2. SMS-OTP no es suficiente (SIM swapping)\n3. Plazo regulatorio: junio 2026", "procedimiento": "1. Integrar librería webauthn-server\n2. Soportar passkeys (iOS/Android/Windows Hello)\n3. Mantener fallback con TOTP\n4. Pruebas con dispositivos reales", "fecha_actual": "2026-05-09", "fecha_limite": "2026-06-01", "horario": "OFICINA", "responsable": "DIEGO", "area": "SECURITY", "estado": "EN PROGRESO", "prioridad": "URGENTE", "link": "https://www.w3.org/TR/webauthn-2/", "observaciones": "Hito regulatorio — no movible"}, {"n": 12, "cliente": "BANCA DIGITAL ANDINA", "carpeta": "DESARROLLO", "fecha_solicitud": "2026-04-25", "responsable_pm": "ANDREA", "accion": "RECORDAR", "asunto": "Code review trimestral — backend de transacciones\nRepositorio: core-banking-tx", "hechos": "1. Code review del Q2 2026 pendiente\n2. Equipo creció de 4 a 9 desarrolladores\n3. Cliente espera reporte de calidad", "procedimiento": "1. Auditar PRs cerrados últimos 90 días\n2. Revisar métricas SonarQube\n3. Identificar code smells y deuda técnica\n4. Reunión con tech lead", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-14", "horario": "OFICINA", "responsable": "DIEGO", "area": "ENGINEERING", "estado": "PENDIENTE", "prioridad": "MEDIA", "link": "https://docs.sonarsource.com/sonarqube/latest/", "observaciones": null}, {"n": 13, "cliente": "MARKETPLACE ANDINO", "carpeta": "DESARROLLO", "fecha_solicitud": "2026-03-30", "responsable_pm": "ANDREA", "accion": "HACER", "asunto": "Optimización SEO técnico - schema.org markup\nDominio: marketplaceandino.com", "hechos": "1. Posicionamiento orgánico cayó 18% en últimos 3 meses\n2. Falta structured data en páginas de producto\n3. Cliente contrató consultoría SEO", "procedimiento": "1. Implementar JSON-LD para Product, Offer, Review\n2. Validar con Rich Results Test\n3. Configurar sitemap dinámico\n4. Mejorar Core Web Vitals", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-22", "horario": "OFICINA", "responsable": "VALERIA", "area": "ENGINEERING", "estado": "EN PROGRESO", "prioridad": "ALTA", "link": "https://schema.org/Product", "observaciones": "Coordinar con equipo de marketing"}, {"n": 14, "cliente": "MARKETPLACE ANDINO", "carpeta": "DESARROLLO", "fecha_solicitud": "2026-04-16", "responsable_pm": "CAMILA", "accion": "REVISAR", "asunto": "Migración de PostgreSQL 13 a PostgreSQL 16\nClúster: marketplace-rds-prod", "hechos": "1. PG 13 alcanza EOL en noviembre 2026\n2. PG 16 trae mejoras de performance en JOINs\n3. Cliente aprobó ventana de mantenimiento", "procedimiento": "1. Probar migración en staging con dump/restore\n2. Verificar compatibilidad de extensiones\n3. Plan de rollback\n4. Migración en horario de baja carga", "fecha_actual": "2026-05-09", "fecha_limite": "2026-06-08", "horario": "TODO EL DIA", "responsable": "MARTIN", "area": "DEVOPS", "estado": "PENDIENTE", "prioridad": "MEDIA", "link": "https://www.postgresql.org/docs/16/release-16.html", "observaciones": "Backup completo antes y después de la migración"}, {"n": 15, "cliente": "STARTUP CRYPTO LATAM", "carpeta": "DESARROLLO", "fecha_solicitud": "2026-04-03", "responsable_pm": "ANDREA", "accion": "HACER", "asunto": "Smart contract para staking en Solidity\nContrato: StakingPoolV2.sol", "hechos": "1. Cliente quiere lanzar pool de staking en Ethereum\n2. APY variable según liquidez\n3. Auditoría externa antes del mainnet", "procedimiento": "1. Heredar de OpenZeppelin Ownable y ReentrancyGuard\n2. Implementar emergency pause\n3. Tests con Hardhat (>95% cobertura)\n4. Deploy en testnet Sepolia", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-27", "horario": "OFICINA", "responsable": "DIEGO", "area": "ENGINEERING", "estado": "EN PROGRESO", "prioridad": "URGENTE", "link": "https://docs.openzeppelin.com/contracts/5.x/", "observaciones": "Auditoría con Trail of Bits ya cotizada"}, {"n": 16, "cliente": "STARTUP CRYPTO LATAM", "carpeta": "QA / TESTING", "fecha_solicitud": "2026-04-19", "responsable_pm": "CAMILA", "accion": "REVISAR", "asunto": "Tests de integración para web3 wallet connect\nFront-end: dapp-frontend", "hechos": "1. Wallets soportadas: MetaMask, WalletConnect, Coinbase\n2. Falta cobertura para casos de chain switching\n3. Bug reportado en re-conexión", "procedimiento": "1. Configurar Hardhat Network para tests\n2. Mockear providers con web3-mock\n3. Probar flujos de error y rechazo de firma\n4. CI con cobertura mínima 80%", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-21", "horario": "OFICINA", "responsable": "VALERIA", "area": "QA", "estado": "PENDIENTE", "prioridad": "MEDIA", "link": "https://docs.metamask.io/wallet/", "observaciones": null}, {"n": 17, "cliente": "AGROTECH PERÚ", "carpeta": "DEVOPS", "fecha_solicitud": "2026-03-25", "responsable_pm": "ANDREA", "accion": "HACER", "asunto": "Implementar observabilidad con OpenTelemetry\nStack: backend Node.js + Python ML", "hechos": "1. Diagnosticar incidentes toma >2 horas en promedio\n2. No hay traces distribuidos\n3. Cliente aprobó stack: OTel + Tempo + Loki + Grafana", "procedimiento": "1. Instrumentar servicios con SDK OTel\n2. Configurar collector con OTLP\n3. Definir spans y atributos relevantes\n4. Crear dashboards Grafana", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-16", "horario": "OFICINA", "responsable": "MARTIN", "area": "DEVOPS", "estado": "EN PROGRESO", "prioridad": "ALTA", "link": "https://opentelemetry.io/docs/", "observaciones": "Pendiente: definir SLOs con product owner"}, {"n": 18, "cliente": "AGROTECH PERÚ", "carpeta": "DESARROLLO", "fecha_solicitud": "2026-04-21", "responsable_pm": "ANDREA", "accion": "REVISAR", "asunto": "Modelo ML para predicción de cosecha\nNotebook: yield-prediction-v3.ipynb", "hechos": "1. Modelo actual con XGBoost tiene RMSE 0.18\n2. Cliente quiere probar Random Forest y LightGBM\n3. Dataset: 5 años de datos históricos", "procedimiento": "1. Feature engineering con datos satelitales\n2. Cross-validation k=5\n3. Hyperparameter tuning con Optuna\n4. Comparar métricas y deployar el mejor", "fecha_actual": "2026-05-09", "fecha_limite": "2026-06-10", "horario": "OFICINA", "responsable": "DIEGO", "area": "PRODUCT", "estado": "PENDIENTE", "prioridad": "MEDIA", "link": "https://scikit-learn.org/stable/user_guide.html", "observaciones": null}, {"n": 19, "cliente": "INSURANCE TECH S.A.", "carpeta": "DESARROLLO", "fecha_solicitud": "2026-04-07", "responsable_pm": "CAMILA", "accion": "HACER", "asunto": "Sistema de notificaciones push con FCM\nApp móvil: insurance-mobile-app", "hechos": "1. Cliente quiere notificar siniestros en tiempo real\n2. Tasa de apertura de email: 12%\n3. Meta: 65%+ de apertura con push", "procedimiento": "1. Configurar Firebase Cloud Messaging\n2. Implementar handler en iOS y Android\n3. Backend con firebase-admin SDK\n4. Segmentación por tipo de cliente", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-19", "horario": "OFICINA", "responsable": "VALERIA", "area": "ENGINEERING", "estado": "EN PROGRESO", "prioridad": "MEDIA", "link": "https://firebase.google.com/docs/cloud-messaging", "observaciones": null}, {"n": 20, "cliente": "INSURANCE TECH S.A.", "carpeta": "SEGURIDAD", "fecha_solicitud": "2026-04-11", "responsable_pm": "ANDREA", "accion": "REVISAR", "asunto": "Análisis de dependencias vulnerables\nReportes: Snyk + GitHub Dependabot", "hechos": "1. Snyk reporta 47 vulnerabilidades (8 Critical, 12 High)\n2. Equipo no actualiza dependencias hace 6 meses\n3. Cliente exige reporte mensual", "procedimiento": "1. Priorizar críticas y altas\n2. Crear PRs por bumps con changelog\n3. Probar en staging antes de merge\n4. Configurar Dependabot auto-merge para minor/patch", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-13", "horario": "OFICINA", "responsable": "DIEGO", "area": "SECURITY", "estado": "EN PROCESO", "prioridad": "URGENTE", "link": "https://docs.snyk.io/", "observaciones": "Vulnerabilidad Log4Shell aún sin parchar en servicio legacy"}, {"n": 21, "cliente": "EDUTECH PERÚ S.A.C.", "carpeta": "DOCUMENTACION", "fecha_solicitud": "2026-04-24", "responsable_pm": "CAMILA", "accion": "HACER", "asunto": "Migrar docs a Docusaurus 3.0\nRepo actual: en MkDocs (poco mantenido)", "hechos": "1. Documentación dispersa en 4 sitios distintos\n2. Necesidad: portal único para devs externos\n3. Soporte i18n (ES, EN, PT)", "procedimiento": "1. Configurar Docusaurus con TypeScript\n2. Migrar markdown existente\n3. Implementar versionado de docs\n4. Deploy en GitHub Pages", "fecha_actual": "2026-05-09", "fecha_limite": "2026-06-04", "horario": "OFICINA", "responsable": "VALERIA", "area": "ENGINEERING", "estado": "PENDIENTE", "prioridad": "BAJA", "link": "https://docusaurus.io/docs", "observaciones": null}, {"n": 22, "cliente": "BANCA DIGITAL ANDINA", "carpeta": "DEVOPS", "fecha_solicitud": "2026-04-26", "responsable_pm": "ANDREA", "accion": "RECORDAR", "asunto": "Renovación de certificados TLS — wildcard\nDominio: *.bancandina.pe", "hechos": "1. Certificados expiran 15 de junio 2026\n2. Última renovación causó downtime no planificado\n3. Cliente requiere automatización", "procedimiento": "1. Configurar cert-manager en EKS\n2. Usar Let's Encrypt con DNS-01 challenge\n3. Programar renovación automática\n4. Alertas en PagerDuty si falla renovación", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-30", "horario": "OFICINA", "responsable": "MARTIN", "area": "DEVOPS", "estado": "PENDIENTE", "prioridad": "ALTA", "link": "https://cert-manager.io/docs/", "observaciones": "Documentar runbook para el equipo de SRE"}, {"n": 23, "cliente": "FINTECH NOVA S.A.C.", "carpeta": "DESARROLLO", "fecha_solicitud": "2026-04-28", "responsable_pm": "ANDREA", "accion": "HACER", "asunto": "Implementar idempotencia en API de pagos\nEndpoint: POST /v1/charges", "hechos": "1. Cliente reporta cargos duplicados ante reintentos\n2. Patrón estándar: header Idempotency-Key\n3. Storage: Redis con TTL 24h", "procedimiento": "1. Validar formato UUID v4 en header\n2. Cachear request hash y response\n3. Devolver respuesta cacheada en duplicados\n4. Tests con escenarios concurrentes", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-17", "horario": "OFICINA", "responsable": "DIEGO", "area": "ENGINEERING", "estado": "EN PROGRESO", "prioridad": "URGENTE", "link": "https://stripe.com/docs/api/idempotent_requests", "observaciones": "Modelo de implementación: Stripe API"}, {"n": 24, "cliente": "STARTUP CRYPTO LATAM", "carpeta": "DOCUMENTACION", "fecha_solicitud": "2026-04-30", "responsable_pm": "CAMILA", "accion": "REVISAR", "asunto": "Whitepaper técnico v2.0 del protocolo\nDocumento: whitepaper-v2.pdf", "hechos": "1. Versión 1 publicada en enero 2026\n2. Inversionistas piden detalles del consensus\n3. Falta sección de tokenomics actualizada", "procedimiento": "1. Reescribir capítulo de arquitectura\n2. Diagramas con Mermaid y Excalidraw\n3. Revisión técnica con CTO\n4. Publicar en arXiv y sitio oficial", "fecha_actual": "2026-05-09", "fecha_limite": "2026-06-12", "horario": "TODO EL DIA", "responsable": "DIEGO", "area": "PRODUCT", "estado": "PENDIENTE", "prioridad": "MEDIA", "link": "https://ethereum.org/en/whitepaper/", "observaciones": "Modelo: whitepaper de Ethereum"}, {"n": 25, "cliente": "MARKETPLACE ANDINO", "carpeta": "QA / TESTING", "fecha_solicitud": "2026-05-02", "responsable_pm": "CAMILA", "accion": "HACER", "asunto": "Tests de accesibilidad WCAG 2.1 AA\nPáginas críticas: checkout y login", "hechos": "1. Cliente recibió denuncia por accesibilidad\n2. Compromiso legal: cumplimiento total en 90 días\n3. Auditoría externa en julio", "procedimiento": "1. Audit con axe-core y Lighthouse\n2. Corregir alt text, contraste y keyboard nav\n3. Probar con NVDA y VoiceOver\n4. Documentar declaración de accesibilidad", "fecha_actual": "2026-05-09", "fecha_limite": "2026-06-15", "horario": "OFICINA", "responsable": "VALERIA", "area": "QA", "estado": "PENDIENTE", "prioridad": "ALTA", "link": "https://www.w3.org/WAI/WCAG21/quickref/", "observaciones": null}, {"n": 26, "cliente": "HEALTHTRACK SOLUTIONS", "carpeta": "SEGURIDAD", "fecha_solicitud": "2026-05-04", "responsable_pm": "ANDREA", "accion": "HACER", "asunto": "Cumplimiento HIPAA — datos de pacientes\nBase de datos: patients-db-prod", "hechos": "1. Cliente expandirá operación a EE.UU.\n2. HIPAA exige cifrado en reposo y en tránsito\n3. Auditoría de accesos pendiente", "procedimiento": "1. Configurar AWS KMS para cifrado\n2. Habilitar audit logs en RDS\n3. Implementar row-level security\n4. Documentar BAA con AWS", "fecha_actual": "2026-05-09", "fecha_limite": "2026-06-20", "horario": "OFICINA", "responsable": "DIEGO", "area": "SECURITY", "estado": "PENDIENTE", "prioridad": "URGENTE", "link": "https://www.hhs.gov/hipaa/for-professionals/security/index.html", "observaciones": "Coordinar con departamento legal del cliente"}, {"n": 27, "cliente": "LOGISTICS PRO S.A.C.", "carpeta": "DESARROLLO", "fecha_solicitud": "2026-05-05", "responsable_pm": "CAMILA", "accion": "REVISAR", "asunto": "Integración con API de SUNAT — facturación electrónica\nServicio: invoicing-service", "hechos": "1. SUNAT actualizó esquema XML en abril\n2. Cliente recibe rechazos en 8% de facturas\n3. Plazo regulatorio: 30 días", "procedimiento": "1. Actualizar XSD según especificación SUNAT\n2. Validar con XMLSpy\n3. Corregir mapeo de campos\n4. Re-enviar facturas rechazadas", "fecha_actual": "2026-05-09", "fecha_limite": "2026-05-24", "horario": "OFICINA", "responsable": "MARTIN", "area": "ENGINEERING", "estado": "EN PROCESO", "prioridad": "URGENTE", "link": "https://www.sunat.gob.pe/orientacion/cpe/", "observaciones": null}, {"n": 28, "cliente": "RETAIL OMNI S.A.", "carpeta": "DESARROLLO", "fecha_solicitud": "2026-05-06", "responsable_pm": "ANDREA", "accion": "HACER", "asunto": "Implementar feature flags con Unleash\nServicios: 12 microservicios", "hechos": "1. Equipo despliega cambios sin canary\n2. Rollbacks toman 25 min en promedio\n3. Decisión: feature toggles para release seguros", "procedimiento": "1. Self-host Unleash en EKS\n2. Integrar SDK en cada microservicio\n3. Capacitar a developers\n4. Migrar 3 features piloto", "fecha_actual": "2026-05-09", "fecha_limite": "2026-06-25", "horario": "OFICINA", "responsable": "DIEGO", "area": "ENGINEERING", "estado": "PENDIENTE", "prioridad": "MEDIA", "link": "https://docs.getunleash.io/", "observaciones": null}, {"n": 29, "cliente": "AGROTECH PERÚ", "carpeta": "QA / TESTING", "fecha_solicitud": "2026-05-07", "responsable_pm": "CAMILA", "accion": "HACER", "asunto": "Validación de datos del modelo ML\nPipeline: yield-prediction-pipeline", "hechos": "1. Detectados outliers en datos satelitales\n2. Modelo da predicciones erróneas en 4% de casos\n3. Cliente perdió confianza en último release", "procedimiento": "1. Implementar Great Expectations en pipeline\n2. Definir suite de validaciones\n3. Bloquear deploy si falla validación\n4. Alertas en Slack por data drift", "fecha_actual": "2026-05-09", "fecha_limite": "2026-06-18", "horario": "OFICINA", "responsable": "VALERIA", "area": "QA", "estado": "PENDIENTE", "prioridad": "ALTA", "link": "https://greatexpectations.io/", "observaciones": "Modelo de monitoreo: detectar data drift mensualmente"}, {"n": 30, "cliente": "INSURANCE TECH S.A.", "carpeta": "DEVOPS", "fecha_solicitud": "2026-05-08", "responsable_pm": "ANDREA", "accion": "RECORDAR", "asunto": "Configurar disaster recovery en región secundaria\nRegión primaria: us-east-1, DR: us-west-2", "hechos": "1. RTO objetivo: 4 horas\n2. RPO objetivo: 15 minutos\n3. Auditoría regulatoria en julio 2026", "procedimiento": "1. Replicar datos con AWS DMS y RDS read replicas\n2. Configurar Route 53 failover\n3. Runbooks documentados\n4. Simulacro trimestral", "fecha_actual": "2026-05-09", "fecha_limite": "2026-06-28", "horario": "TODO EL DIA", "responsable": "MARTIN", "area": "DEVOPS", "estado": "PENDIENTE", "prioridad": "ALTA", "link": "https://aws.amazon.com/architecture/disaster-recovery/", "observaciones": "Coordinar simulacro con equipo de seguridad"}];
+
+// ====================== STATE ======================
+let TICKETS = [];
+let SOURCE_INFO = { name: 'Datos de ejemplo', meta: 'Snapshot embebido', kind: 'sample' };
+let TICKET_FILTER = 'all';
+
+// ====================== VIEW ROUTING ======================
+const viewConfig = {
+  'dashboard': 'Dashboard',
+  'clientes': 'Clientes',
+  'cliente-detalle': 'Detalle de cliente',
+  'tickets': 'Tickets',
+  'deadlines': 'Plazos y vencimientos',
+  'tareas': 'Tareas',
+  'equipo': 'Equipo',
+  'areas': 'Distribución por áreas',
+  'ticket-detail': 'Detalle del ticket'
+};
+
+function showView(name) {
+  if (name !== 'ticket-detail' && name !== 'cliente-detalle') {
+    window._previousView = name;
+  }
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const el = document.getElementById('view-' + name);
+  if (el) el.classList.add('active');
+  document.getElementById('view-title').textContent = viewConfig[name] || name;
+  let navId = 'nav-' + name;
+  if (name === 'cliente-detalle') navId = 'nav-clientes';
+  if (name === 'ticket-detail') navId = 'nav-tickets';
+  if (name === 'deadlines') navId = 'nav-deadlines';
+  const navEl = document.getElementById(navId);
+  if (navEl) navEl.classList.add('active');
+  // scroll content
+  if (el) el.scrollTop = 0;
+}
+
+// ====================== HELPERS ======================
+function initials(name) {
+  if (!name) return '??';
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+function avatarColor(name) {
+  const colors = ['av-indigo','av-emerald','av-amber','av-rose','av-sky','av-violet'];
+  let h = 0;
+  for (const c of String(name||'')) h = (h*31 + c.charCodeAt(0)) & 0xffffffff;
+  return colors[Math.abs(h) % colors.length];
+}
+function fmtDate(s) {
+  if (!s) return '—';
+  if (s instanceof Date) return s.toLocaleDateString('es-PE', {day:'2-digit', month:'short', year:'numeric'});
+  // YYYY-MM-DD
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return String(s);
+  const d = new Date(+m[1], +m[2]-1, +m[3]);
+  return d.toLocaleDateString('es-PE', {day:'2-digit', month:'short', year:'numeric'});
+}
+function daysUntil(s) {
+  if (!s) return null;
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const target = new Date(+m[1], +m[2]-1, +m[3]);
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.round((target - today) / 86400000);
+}
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function truncate(s, n) {
+  if (!s) return '';
+  s = String(s).replace(/\n/g, ' ');
+  return s.length > n ? s.slice(0, n) + '…' : s;
+}
+function priorityColor(p) {
+  switch ((p||'').toUpperCase()) {
+    case 'URGENTE': return {bg:'var(--rose-50)', fg:'var(--rose-800)'};
+    case 'ALTA':    return {bg:'var(--amber-50)', fg:'var(--amber-800)'};
+    case 'MEDIA':   return {bg:'var(--indigo-50)', fg:'var(--indigo-800)'};
+    case 'BAJA':    return {bg:'var(--slate-50)', fg:'var(--slate-800)'};
+    default:        return {bg:'var(--slate-50)', fg:'var(--slate-800)'};
+  }
+}
+function statusClass(s) {
+  switch ((s||'').toUpperCase()) {
+    case 'EN PROGRESO': return 'e-progreso';
+    case 'EN PROCESO':  return 'e-proceso';
+    case 'PENDIENTE':   return 'e-pendiente';
+    case 'LISTO':       return 'e-listo';
+    case 'ARCHIVAR':    return 'e-listo';
+    default:            return 'e-pendiente';
+  }
+}
+
+// ====================== DATA LOADING ======================
+function setSourceInfo(name, meta, kind) {
+  SOURCE_INFO = { name, meta, kind };
+  document.getElementById('ds-name').textContent = name;
+  document.getElementById('ds-meta').textContent = meta;
+  const dot = document.querySelector('#data-status .ds-dot');
+  dot.classList.remove('warn', 'err');
+  if (kind === 'sample') dot.classList.add('warn');
+  if (kind === 'error') dot.classList.add('err');
+}
+
+function normalizeRow(row) {
+  // accept multiple header conventions (case-insensitive)
+  const norm = {};
+  for (const k of Object.keys(row)) {
+    norm[k.toLowerCase().trim()] = row[k];
+  }
+  const get = (...keys) => {
+    for (const k of keys) {
+      const v = norm[k.toLowerCase()];
+      if (v !== undefined && v !== null && v !== '') return v;
+    }
+    return '';
+  };
+  // Convert Excel serial dates to YYYY-MM-DD
+  const dateVal = (v) => {
+    if (!v) return '';
+    if (v instanceof Date) {
+      const y = v.getFullYear();
+      const m = String(v.getMonth()+1).padStart(2,'0');
+      const d = String(v.getDate()).padStart(2,'0');
+      return `${y}-${m}-${d}`;
+    }
+    return String(v);
+  };
+  return {
+    n: get('n°','n','no','#','número'),
+    cliente: get('cliente','client'),
+    carpeta: get('carpeta','folder','category'),
+    fecha_solicitud: dateVal(get('fecha de solicitud','fecha solicitud','fecha_solicitud','request date')),
+    responsable_pm: get('responsable pm','responsable calité','responsable_pm','pm'),
+    accion: get('accion','acción','action'),
+    asunto: get('descripción del servicio (asunto)','descripcion del servicio (asunto)','descripción','asunto','asunto/descripción','subject','title'),
+    hechos: get('hechos','facts'),
+    procedimiento: get('procedimiento\n(¿como hacerlo?)','procedimiento','procedure'),
+    fecha_actual: dateVal(get('fecha actual','current date')),
+    fecha_limite: dateVal(get('fecha límite','fecha limite','fecha_limite','deadline','due date')),
+    horario: get('horario','schedule'),
+    responsable: get('responsable','assignee','owner'),
+    area: get('area','área','team'),
+    estado: get('estado','status'),
+    prioridad: get('prioridad','priority'),
+    link: get('link','url','reference'),
+    observaciones: get('observaciones','notes','observations')
+  };
+}
+
+async function loadFromArrayBuffer(buf, sourceName, meta) {
+  try {
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    // Find the right sheet — prefer "DEV TEAM II" or first that has tickets
+    let sheetName = wb.SheetNames.find(n => /dev\s*team|backlog|ticket|task/i.test(n)) || wb.SheetNames[0];
+    const ws = wb.Sheets[sheetName];
+    // Use range that skips title row (B1) — header is in row 2
+    const json = XLSX.utils.sheet_to_json(ws, { range: 1, defval: '', raw: false, dateNF: 'yyyy-mm-dd' });
+    const tickets = json.map(normalizeRow).filter(t => t.cliente && t.asunto);
+    if (tickets.length === 0) throw new Error('No se encontraron tickets en el archivo. Verifica que la hoja tenga las columnas esperadas.');
+    TICKETS = tickets;
+    setSourceInfo(sourceName, meta, 'live');
+    closeSourceModal();
+    renderAll();
+    return true;
+  } catch (e) {
+    showModalError('Error al leer el archivo: ' + e.message);
+    return false;
+  }
+}
+
+function showModalError(msg) {
+  const el = document.getElementById('modal-error');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 6000);
+}
+
+function openSourceModal() {
+  document.getElementById('source-modal').classList.add('open');
+  document.getElementById('modal-error').classList.remove('show');
+}
+function closeSourceModal() {
+  document.getElementById('source-modal').classList.remove('open');
+}
+
+async function loadFromUrl() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) { showModalError('Ingresa una URL.'); return; }
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const buf = await resp.arrayBuffer();
+    await loadFromArrayBuffer(buf, 'URL remota', new URL(url).hostname);
+  } catch (e) {
+    showModalError('No se pudo descargar (CORS, permisos o URL inválida): ' + e.message);
+  }
+}
+
+async function loadFromPath() {
+  const path = document.getElementById('path-input').value.trim();
+  if (!path) { showModalError('Ingresa una ruta.'); return; }
+  try {
+    const resp = await fetch(path);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const buf = await resp.arrayBuffer();
+    await loadFromArrayBuffer(buf, path.split('/').pop(), 'Ruta local');
+  } catch (e) {
+    showModalError('No se pudo abrir el archivo (¿servidor local activo?): ' + e.message);
+  }
+}
+
+function useSampleData() {
+  TICKETS = SAMPLE_DATA.map(normalizeRow);
+  setSourceInfo('Datos de ejemplo', '30 tickets embebidos', 'sample');
+  closeSourceModal();
+  renderAll();
+}
+
+// ====================== RENDERING ======================
+function renderAll() {
+  renderDashboard();
+  renderClients();
+  renderTickets();
+  renderDeadlines();
+  renderTareas();
+  renderTeam();
+  renderAreas();
+  // update sidebar badges
+  document.getElementById('badge-clientes').textContent = new Set(TICKETS.map(t=>t.cliente)).size;
+  document.getElementById('badge-tickets').textContent = TICKETS.length;
+  document.getElementById('badge-deadlines').textContent = TICKETS.filter(t => {
+    const d = daysUntil(t.fecha_limite);
+    return d !== null && d <= 7 && d >= 0;
+  }).length;
+}
+
+function renderDashboard() {
+  // KPIs
+  const total = TICKETS.length;
+  const urgent = TICKETS.filter(t => (t.prioridad||'').toUpperCase() === 'URGENTE').length;
+  const inProgress = TICKETS.filter(t => /PROGRES|PROCES/i.test(t.estado||'')).length;
+  const overdueOrToday = TICKETS.filter(t => {
+    const d = daysUntil(t.fecha_limite);
+    return d !== null && d <= 0;
+  }).length;
+  const dueWeek = TICKETS.filter(t => {
+    const d = daysUntil(t.fecha_limite);
+    return d !== null && d > 0 && d <= 7;
+  }).length;
+
+  document.getElementById('kpi-grid').innerHTML = `
+    <div class="kpi-card" onclick="showView('tickets')">
+      <div class="kpi-label">Tickets activos</div>
+      <div class="kpi-value">${total}</div>
+      <div class="kpi-sub"><span class="kpi-dot" style="background:var(--indigo-600)"></span>Sprint Backlog</div>
+    </div>
+    <div class="kpi-card" onclick="showView('deadlines')">
+      <div class="kpi-label">Vencidos / hoy</div>
+      <div class="kpi-value" style="color:#E11D48">${overdueOrToday}</div>
+      <div class="kpi-sub"><span class="kpi-dot" style="background:#E11D48"></span>Acción inmediata</div>
+    </div>
+    <div class="kpi-card" onclick="setFilter('URGENTE');showView('tickets')">
+      <div class="kpi-label">Prioridad urgente</div>
+      <div class="kpi-value" style="color:#B45309">${urgent}</div>
+      <div class="kpi-sub"><span class="kpi-dot" style="background:#B45309"></span>De ${total} tickets totales</div>
+    </div>
+    <div class="kpi-card" onclick="showView('deadlines')">
+      <div class="kpi-label">Vencen esta semana</div>
+      <div class="kpi-value">${dueWeek}</div>
+      <div class="kpi-sub"><span class="kpi-dot" style="background:var(--indigo-600)"></span>Próximos 7 días</div>
+    </div>
+  `;
+
+  // Plazos próximos
+  const upcoming = [...TICKETS]
+    .map((t, i) => ({...t, _idx: i, _d: daysUntil(t.fecha_limite)}))
+    .filter(t => t._d !== null && t._d <= 14)
+    .sort((a,b) => a._d - b._d)
+    .slice(0, 6);
+  document.getElementById('dash-deadlines').innerHTML = upcoming.length ? upcoming.map(t => {
+    const dotColor = t._d <= 0 ? '#E11D48' : t._d <= 3 ? '#B45309' : 'var(--indigo-600)';
+    const label = t._d < 0 ? `Vencido hace ${-t._d}d` : t._d === 0 ? 'Vence HOY' : `En ${t._d}d`;
+    return `<div class="alert-item" style="cursor:pointer" onclick="openTicket(${t._idx})">
+      <div class="alert-dot" style="background:${dotColor}"></div>
+      <div style="flex:1; min-width:0;">
+        <div class="alert-text"><strong style="font-weight:600">${label}</strong> — ${escHtml(t.cliente)}</div>
+        <div class="alert-meta">${escHtml(truncate(t.asunto, 70))} · ${escHtml(t.carpeta)} · ${escHtml(t.responsable)}</div>
+      </div>
+    </div>`;
+  }).join('') : '<div style="font-size:13px;color:var(--text-tertiary);padding:12px 0">No hay plazos próximos.</div>';
+
+  // Urgentes
+  const urgentList = TICKETS.map((t,i) => ({...t,_idx:i})).filter(t => (t.prioridad||'').toUpperCase() === 'URGENTE').slice(0, 5);
+  document.getElementById('dash-urgent').innerHTML = urgentList.length ? urgentList.map(t => `
+    <div class="case-item" onclick="openTicket(${t._idx})">
+      <div class="case-avatar ${avatarColor(t.cliente)}">${escHtml(initials(t.cliente))}</div>
+      <div class="case-info">
+        <div class="case-title">${escHtml(truncate(t.asunto, 60))}</div>
+        <div class="case-client">${escHtml(t.cliente)} · ${escHtml(t.carpeta)}</div>
+      </div>
+      <span class="estado e-urgente">Urgente</span>
+    </div>
+  `).join('') : '<div style="font-size:13px;color:var(--text-tertiary);padding:12px 0">No hay tickets urgentes.</div>';
+
+  // Áreas (carpeta)
+  const byCarp = {};
+  TICKETS.forEach(t => { if (t.carpeta) byCarp[t.carpeta] = (byCarp[t.carpeta]||0) + 1; });
+  const sortedCarp = Object.entries(byCarp).sort((a,b) => b[1] - a[1]);
+  const maxCarp = sortedCarp[0] ? sortedCarp[0][1] : 1;
+  const colors = ['#4F46E5','#7C3AED','#059669','#F59E0B','#E11D48','#0EA5E9','#8B5CF6'];
+  document.getElementById('dash-areas').innerHTML = sortedCarp.length ? sortedCarp.slice(0, 7).map((row, i) => `
+    <div class="chart-bar-row">
+      <div class="chart-bar-label">${escHtml(row[0])}</div>
+      <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${(row[1]/maxCarp*100).toFixed(0)}%;background:${colors[i%colors.length]}"></div></div>
+      <div class="chart-bar-num">${row[1]}</div>
+    </div>
+  `).join('') : '<div style="font-size:13px;color:var(--text-tertiary)">Sin datos.</div>';
+
+  // Top clientes
+  const byClient = {};
+  TICKETS.forEach(t => {
+    if (!byClient[t.cliente]) byClient[t.cliente] = { total: 0, urgent: 0 };
+    byClient[t.cliente].total++;
+    if ((t.prioridad||'').toUpperCase() === 'URGENTE') byClient[t.cliente].urgent++;
+  });
+  const sortedClients = Object.entries(byClient).sort((a,b) => b[1].total - a[1].total).slice(0, 6);
+  document.getElementById('dash-clients').innerHTML = sortedClients.length ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+    ${sortedClients.map(([name, s]) => `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border);cursor:pointer" onclick="openClient('${escHtml(name).replace(/'/g, "\\'")}')">
+        <div class="case-avatar ${avatarColor(name)}" style="width:26px;height:26px;font-size:9px">${escHtml(initials(name))}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(name)}</div>
+          <div style="font-size:10px;color:var(--text-tertiary)">${s.total} tickets${s.urgent ? ` <span style="font-size:10px;padding:1px 6px;background:var(--rose-50);color:var(--rose-800);border-radius:8px;margin-left:2px;font-weight:600">${s.urgent} urg.</span>` : ''}</div>
+        </div>
+      </div>
+    `).join('')}
+    </div>
+  ` : '<div style="font-size:13px;color:var(--text-tertiary)">Sin clientes.</div>';
+}
+
+function renderClients() {
+  const byClient = {};
+  TICKETS.forEach(t => {
+    if (!byClient[t.cliente]) byClient[t.cliente] = { total: 0, urgent: 0, carpetas: new Set() };
+    byClient[t.cliente].total++;
+    if ((t.prioridad||'').toUpperCase() === 'URGENTE') byClient[t.cliente].urgent++;
+    if (t.carpeta) byClient[t.cliente].carpetas.add(t.carpeta);
+  });
+  const rows = Object.entries(byClient).sort((a,b) => b[1].total - a[1].total);
+  document.getElementById('clients-table-body').innerHTML = rows.map(([name, s]) => {
+    const safe = escHtml(name).replace(/'/g, "\\'");
+    return `<tr data-clickable onclick="openClient('${safe}')">
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="case-avatar ${avatarColor(name)}" style="width:28px;height:28px;font-size:10px">${escHtml(initials(name))}</div><span style="font-weight:500">${escHtml(name)}</span></div></td>
+      <td>${s.total}</td>
+      <td>${s.urgent ? `<span class="estado e-urgente">${s.urgent} urgente${s.urgent>1?'s':''}</span>` : '—'}</td>
+      <td style="font-size:11px;color:var(--text-secondary)">${escHtml([...s.carpetas].join(', '))}</td>
+      <td><button class="btn btn-sm" onclick="event.stopPropagation();openClient('${safe}')">Ver →</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function setFilter(f) {
+  TICKET_FILTER = f;
+  document.querySelectorAll('#tickets-filters .pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.filter === f);
+  });
+  renderTickets();
+}
+
+function renderTickets() {
+  const q = (document.getElementById('search-input').value || '').toLowerCase();
+  const filtered = TICKETS.map((t,i) => ({...t,_idx:i})).filter(t => {
+    if (TICKET_FILTER !== 'all' && (t.prioridad||'').toUpperCase() !== TICKET_FILTER) return false;
+    if (q) {
+      const blob = `${t.cliente} ${t.asunto} ${t.carpeta} ${t.responsable} ${t.area}`.toLowerCase();
+      if (!blob.includes(q)) return false;
+    }
+    return true;
+  });
+  document.getElementById('tickets-table-body').innerHTML = filtered.length ? filtered.map(t => {
+    const pc = priorityColor(t.prioridad);
+    return `<tr data-clickable onclick="openTicket(${t._idx})">
+      <td>${escHtml(t.n)}</td>
+      <td><div style="display:flex;align-items:center;gap:6px"><div class="case-avatar ${avatarColor(t.cliente)}" style="width:22px;height:22px;font-size:9px">${escHtml(initials(t.cliente))}</div><span style="overflow:hidden;text-overflow:ellipsis">${escHtml(truncate(t.cliente, 28))}</span></div></td>
+      <td title="${escHtml(t.asunto)}">${escHtml(truncate(t.asunto, 60))}</td>
+      <td>${escHtml(t.area)}</td>
+      <td>${escHtml(t.responsable)}</td>
+      <td><span class="estado ${statusClass(t.estado)}">${escHtml(t.estado)}</span></td>
+      <td><span class="estado" style="background:${pc.bg};color:${pc.fg}">${escHtml(t.prioridad)}</span></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--text-tertiary);padding:30px">No hay tickets que coincidan con el filtro.</td></tr>`;
+}
+
+function renderDeadlines() {
+  const list = TICKETS.map((t,i) => ({...t,_idx:i,_d:daysUntil(t.fecha_limite)}))
+    .filter(t => t._d !== null)
+    .sort((a,b) => a._d - b._d);
+
+  if (!list.length) {
+    document.getElementById('deadlines-list').innerHTML = '<div style="text-align:center;color:var(--text-tertiary);padding:30px">No hay plazos registrados.</div>';
+    return;
+  }
+
+  // Group by bucket
+  const buckets = {
+    'Vencidos': [],
+    'Hoy': [],
+    'Esta semana': [],
+    'Próximos 30 días': [],
+    'Más adelante': []
+  };
+  list.forEach(t => {
+    if (t._d < 0) buckets['Vencidos'].push(t);
+    else if (t._d === 0) buckets['Hoy'].push(t);
+    else if (t._d <= 7) buckets['Esta semana'].push(t);
+    else if (t._d <= 30) buckets['Próximos 30 días'].push(t);
+    else buckets['Más adelante'].push(t);
+  });
+
+  const colors = {'Vencidos':'#E11D48','Hoy':'#E11D48','Esta semana':'#B45309','Próximos 30 días':'var(--indigo-600)','Más adelante':'var(--text-tertiary)'};
+  let html = '';
+  Object.entries(buckets).forEach(([name, items]) => {
+    if (!items.length) return;
+    html += `<div style="margin-bottom:18px">
+      <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">${name} (${items.length})</div>`;
+    items.forEach(t => {
+      html += `<div class="alert-item" style="cursor:pointer" onclick="openTicket(${t._idx})">
+        <div class="alert-dot" style="background:${colors[name]}"></div>
+        <div style="flex:1;min-width:0">
+          <div class="alert-text"><strong style="font-weight:600">${fmtDate(t.fecha_limite)}</strong> — ${escHtml(t.cliente)}</div>
+          <div class="alert-meta">${escHtml(truncate(t.asunto, 90))} · ${escHtml(t.responsable)} · ${escHtml(t.carpeta)}</div>
+        </div>
+        <span class="estado" style="background:${priorityColor(t.prioridad).bg};color:${priorityColor(t.prioridad).fg}">${escHtml(t.prioridad)}</span>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('deadlines-list').innerHTML = html;
+}
+
+function renderTareas() {
+  // Each step from procedimiento becomes a task
+  const tasks = [];
+  TICKETS.forEach((t, i) => {
+    const steps = (t.procedimiento || '').split(/\n/).map(s => s.trim()).filter(Boolean);
+    steps.forEach(step => tasks.push({
+      ticketIdx: i,
+      ticket: t,
+      step
+    }));
+  });
+  // Show top 50 grouped by responsable
+  const byResp = {};
+  tasks.forEach(t => {
+    const k = t.ticket.responsable || '—';
+    if (!byResp[k]) byResp[k] = [];
+    byResp[k].push(t);
+  });
+  let html = '';
+  Object.entries(byResp).sort((a,b) => b[1].length - a[1].length).forEach(([resp, ts]) => {
+    html += `<div style="margin-bottom:18px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div class="resp-pill"><span class="resp-avatar">${escHtml(initials(resp))}</span><span>${escHtml(resp)}</span></div>
+        <span style="font-size:11px;color:var(--text-tertiary)">${ts.length} pasos</span>
+      </div>`;
+    ts.slice(0, 8).forEach(t => {
+      html += `<div class="task-item">
+        <div class="task-check" onclick="this.classList.toggle('done');this.parentElement.querySelector('.task-text').classList.toggle('done');this.innerHTML=this.classList.contains('done')?'<svg width=&quot;9&quot; height=&quot;9&quot; viewBox=&quot;0 0 9 9&quot;><path d=&quot;M1.5 4.5l2 2 4-4&quot; stroke=&quot;%23fff&quot; stroke-width=&quot;1.4&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; fill=&quot;none&quot;/></svg>':''"></div>
+        <div class="task-text" onclick="openTicket(${t.ticketIdx})">${escHtml(truncate(t.step, 110))}</div>
+        <div class="task-due">${escHtml(t.ticket.cliente)}</div>
+      </div>`;
+    });
+    if (ts.length > 8) html += `<div style="font-size:11px;color:var(--text-tertiary);padding:6px 0">…y ${ts.length - 8} más</div>`;
+    html += '</div>';
+  });
+  document.getElementById('tareas-list').innerHTML = html || '<div style="text-align:center;color:var(--text-tertiary);padding:30px">No hay tareas.</div>';
+}
+
+function renderTeam() {
+  const byResp = {};
+  TICKETS.forEach(t => {
+    const k = t.responsable || '—';
+    if (!byResp[k]) byResp[k] = { total: 0, urgent: 0, areas: {} };
+    byResp[k].total++;
+    if ((t.prioridad||'').toUpperCase() === 'URGENTE') byResp[k].urgent++;
+    if (t.area) byResp[k].areas[t.area] = (byResp[k].areas[t.area]||0) + 1;
+  });
+  const rows = Object.entries(byResp).sort((a,b) => b[1].total - a[1].total);
+  document.getElementById('team-table-body').innerHTML = rows.map(([name, s]) => {
+    const max = Math.max(...Object.values(s.areas), 1);
+    const areasHtml = Object.entries(s.areas).map(([a, n]) =>
+      `<span style="display:inline-block;font-size:10px;padding:2px 7px;background:var(--bg-secondary);border-radius:8px;margin-right:4px;color:var(--text-secondary);font-weight:500">${escHtml(a)} <strong style="color:var(--text-primary)">${n}</strong></span>`
+    ).join('');
+    return `<tr>
+      <td><div class="resp-pill"><span class="resp-avatar">${escHtml(initials(name))}</span><span>${escHtml(name)}</span></div></td>
+      <td><strong>${s.total}</strong></td>
+      <td>${s.urgent ? `<span class="estado e-urgente">${s.urgent}</span>` : '—'}</td>
+      <td>${areasHtml || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAreas() {
+  const byCarp = {};
+  TICKETS.forEach(t => { if (t.carpeta) byCarp[t.carpeta] = (byCarp[t.carpeta]||0)+1; });
+  const carpRows = Object.entries(byCarp).sort((a,b) => b[1]-a[1]);
+  const maxCarp = Math.max(...carpRows.map(r=>r[1]), 1);
+  const colors = ['#4F46E5','#7C3AED','#059669','#F59E0B','#E11D48','#0EA5E9','#8B5CF6'];
+  document.getElementById('areas-detail').innerHTML = carpRows.map((r,i) => `
+    <div class="chart-bar-row">
+      <div class="chart-bar-label" style="width:160px">${escHtml(r[0])}</div>
+      <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${(r[1]/maxCarp*100).toFixed(0)}%;background:${colors[i%colors.length]}"></div></div>
+      <div class="chart-bar-num">${r[1]}</div>
+    </div>`).join('');
+
+  const byArea = {};
+  TICKETS.forEach(t => { if (t.area) byArea[t.area] = (byArea[t.area]||0)+1; });
+  const aRows = Object.entries(byArea).sort((a,b) => b[1]-a[1]);
+  const maxA = Math.max(...aRows.map(r=>r[1]), 1);
+  document.getElementById('areas-team').innerHTML = aRows.map((r,i) => `
+    <div class="chart-bar-row">
+      <div class="chart-bar-label" style="width:160px">${escHtml(r[0])}</div>
+      <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${(r[1]/maxA*100).toFixed(0)}%;background:${colors[i%colors.length]}"></div></div>
+      <div class="chart-bar-num">${r[1]}</div>
+    </div>`).join('');
+}
+
+// ====================== TICKET DETAIL ======================
+function openTicket(idx) {
+  const t = TICKETS[idx];
+  if (!t) return;
+  document.getElementById('back-label').textContent = `Volver a ${viewConfig[window._previousView] || 'tickets'}`;
+  document.getElementById('td-cliente-badge').textContent = t.cliente;
+  document.getElementById('td-carpeta-badge').textContent = t.carpeta;
+  const estB = document.getElementById('td-estado-badge');
+  estB.textContent = t.estado;
+  estB.className = 'estado ' + statusClass(t.estado);
+  const prB = document.getElementById('td-prioridad-badge');
+  const pc = priorityColor(t.prioridad);
+  prB.textContent = t.prioridad;
+  prB.style.background = pc.bg;
+  prB.style.color = pc.fg;
+  document.getElementById('td-asunto').textContent = t.asunto || '—';
+  document.getElementById('td-num').textContent = t.n || '—';
+  document.getElementById('td-area').textContent = t.area || '—';
+  document.getElementById('td-fecha-sol').textContent = fmtDate(t.fecha_solicitud);
+  document.getElementById('td-fecha-lim').textContent = fmtDate(t.fecha_limite);
+  document.getElementById('td-horario').textContent = t.horario || '—';
+  document.getElementById('td-resp').textContent = t.responsable || '—';
+  document.getElementById('td-resp-avatar').textContent = initials(t.responsable);
+  document.getElementById('td-hechos').textContent = t.hechos || 'Sin hechos registrados.';
+  document.getElementById('td-proc').textContent = t.procedimiento || 'Sin procedimiento registrado.';
+  const link = (t.link || '').trim();
+  const linkEl = document.getElementById('td-link');
+  if (link && /^https?:\/\//i.test(link)) {
+    linkEl.href = link;
+    linkEl.textContent = link;
+    linkEl.style.pointerEvents = '';
+  } else {
+    linkEl.href = '#';
+    linkEl.textContent = link || 'Sin referencia técnica.';
+    linkEl.style.pointerEvents = 'none';
+  }
+  document.getElementById('td-obs').textContent = t.observaciones || 'Sin observaciones.';
+
+  // Tasks
+  const steps = (t.procedimiento || '').split(/\n/).map(s => s.trim()).filter(Boolean);
+  document.getElementById('td-tasks-list').innerHTML = steps.length ? steps.map((s, i) => `
+    <div class="task-list-item">
+      <div class="task-num">${i+1}</div>
+      <div class="task-list-text">${escHtml(s)}</div>
+    </div>
+  `).join('') : '<div style="font-size:13px;color:var(--text-tertiary);padding:12px 0">Sin pasos registrados.</div>';
+
+  showView('ticket-detail');
+}
+
+// ====================== CLIENT DETAIL ======================
+function openClient(name) {
+  const tickets = TICKETS.map((t,i)=>({...t,_idx:i})).filter(t => t.cliente === name);
+  document.getElementById('cd-name').textContent = name;
+  const urg = tickets.filter(t => (t.prioridad||'').toUpperCase()==='URGENTE').length;
+  const areas = [...new Set(tickets.map(t => t.carpeta).filter(Boolean))];
+  document.getElementById('cd-summary').textContent = `${tickets.length} tickets · ${urg} urgentes · ${areas.length} carpeta${areas.length!==1?'s':''}`;
+  document.getElementById('cd-tickets-body').innerHTML = tickets.map(t => {
+    const pc = priorityColor(t.prioridad);
+    return `<tr data-clickable onclick="openTicket(${t._idx})">
+      <td>${escHtml(t.n)}</td>
+      <td title="${escHtml(t.asunto)}">${escHtml(truncate(t.asunto, 70))}</td>
+      <td>${escHtml(t.carpeta)}</td>
+      <td>${escHtml(t.responsable)}</td>
+      <td><span class="estado ${statusClass(t.estado)}">${escHtml(t.estado)}</span></td>
+      <td><span class="estado" style="background:${pc.bg};color:${pc.fg}">${escHtml(t.prioridad)}</span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-tertiary);padding:24px">Sin tickets.</td></tr>';
+  showView('cliente-detalle');
+}
+
+// ====================== INIT / WIRING ======================
+// Modal source tabs
+document.querySelectorAll('.source-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.source-tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.source-panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('srcp-' + t.dataset.srctab).classList.add('active');
+  });
+});
+
+// File input
+document.getElementById('file-input').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = ev => loadFromArrayBuffer(ev.target.result, f.name, `${(f.size/1024).toFixed(1)} KB`);
+  reader.readAsArrayBuffer(f);
+});
+
+// Drag & drop
+const dz = document.getElementById('drop-zone');
+['dragenter','dragover'].forEach(evt => dz.addEventListener(evt, e => { e.preventDefault(); dz.classList.add('dragover'); }));
+['dragleave','drop'].forEach(evt => dz.addEventListener(evt, e => { e.preventDefault(); dz.classList.remove('dragover'); }));
+dz.addEventListener('drop', e => {
+  const f = e.dataTransfer.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = ev => loadFromArrayBuffer(ev.target.result, f.name, `${(f.size/1024).toFixed(1)} KB`);
+  reader.readAsArrayBuffer(f);
+});
+
+// Filter pills
+document.querySelectorAll('#tickets-filters .pill').forEach(p => {
+  p.addEventListener('click', () => setFilter(p.dataset.filter));
+});
+
+// Search
+document.getElementById('search-input').addEventListener('input', () => renderTickets());
+
+// Close modal on backdrop click
+document.getElementById('source-modal').addEventListener('click', e => {
+  if (e.target.id === 'source-modal') closeSourceModal();
+});
+
+// Wait for XLSX library to load (or give up after 4s)
+async function waitForXLSX(maxMs = 4000) {
+  const start = Date.now();
+  while (typeof XLSX === 'undefined' && Date.now() - start < maxMs) {
+    await new Promise(r => setTimeout(r, 100));
+  }
+  return typeof XLSX !== 'undefined';
+}
+
+// On load: try to fetch the XLSX from the same folder, fallback to embedded sample
+async function autoLoad() {
+  const xlsxOk = await waitForXLSX();
+  if (!xlsxOk) {
+    // Library failed (offline / CSP / blocked CDN); use sample so the UI still works
+    useSampleData();
+    setSourceInfo('Datos de ejemplo', 'Librería XLSX no disponible (sin red)', 'error');
+    return;
+  }
+  const candidates = [
+    './SOFTWARE_DEV_TASKS_-_Sprint_Backlog.xlsx',
+    './tasks.xlsx',
+    './backlog.xlsx'
+  ];
+  for (const path of candidates) {
+    try {
+      const resp = await fetch(path);
+      if (!resp.ok) continue;
+      const ct = resp.headers.get('content-type') || '';
+      // Some servers return HTML for missing files — guard
+      if (/text\/html/.test(ct)) continue;
+      const buf = await resp.arrayBuffer();
+      const ok = await loadFromArrayBuffer(buf, path.split('/').pop(), 'Auto-cargado del proyecto');
+      if (ok) return;
+    } catch (e) { /* try next */ }
+  }
+  // No file found — load embedded sample
+  useSampleData();
+}
+
+autoLoad();
+</script>
+</body>
+</html>
