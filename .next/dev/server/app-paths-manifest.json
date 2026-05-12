@@ -1,11 +1,6 @@
 {
   "/api/orgs/[id]/route": "app/api/orgs/[id]/route.js",
   "/api/orgs/route": "app/api/orgs/route.js",
-  "/api/parse-sheets/route": "app/api/parse-sheets/route.js",
-  "/api/projects/[id]/route": "app/api/projects/[id]/route.js",
-  "/api/projects/route": "app/api/projects/route.js",
   "/org/[id]/page": "app/org/[id]/page.js",
-  "/page": "app/page.js",
-  "/projects/[id]/page": "app/projects/[id]/page.js",
-  "/upload/page": "app/upload/page.js"
+  "/page": "app/page.js"
 }

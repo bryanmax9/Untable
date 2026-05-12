@@ -6,10 +6,10 @@ export const runtime = 'nodejs';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const project = getProject(id);
+  const project = await getProject(id);
   if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const allRecords = project.sections.map((_, i) => readRecords(id, i));
+  const allRecords = await Promise.all(project.sections.map((_, i) => readRecords(id, i)));
   const buffer = generateExcelBuffer(project, allRecords);
 
   const filename = project.originalFilename.replace(/\.[^.]+$/, '') + '_updated.xlsx';

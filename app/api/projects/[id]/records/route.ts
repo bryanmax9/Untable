@@ -9,17 +9,17 @@ type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
-  const project = getProject(id);
+  const project = await getProject(id);
   if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const sectionIdx = Number(req.nextUrl.searchParams.get('section') ?? '0');
-  const records = readRecords(id, sectionIdx);
+  const records = await readRecords(id, sectionIdx);
   return NextResponse.json(records);
 }
 
 export async function POST(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
-  const project = getProject(id);
+  const project = await getProject(id);
   if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const sectionIdx = Number(req.nextUrl.searchParams.get('section') ?? '0');
@@ -30,6 +30,6 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     if (k !== '_id') row[k] = v as Row[string];
   }
 
-  const saved = addRecord(id, sectionIdx, row);
+  const saved = await addRecord(id, sectionIdx, row);
   return NextResponse.json(saved, { status: 201 });
 }

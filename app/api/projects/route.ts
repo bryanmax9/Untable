@@ -3,26 +3,25 @@ import { v4 as uuidv4 } from 'uuid';
 import { getSheetInfos, parseSheet } from '@/lib/server/excel-reader';
 import { classifyDomain } from '@/lib/classifier/domain';
 import { bindColumns, buildColorMaps } from '@/lib/binder/binder';
-import { listProjects, saveProject, saveExcelBuffer, writeRecords, getTotalRowCount, readRecords } from '@/lib/server/storage';
+import { listProjects, saveProject, saveExcelBuffer, writeRecords, getTotalRowCount } from '@/lib/server/storage';
 import type { StoredProject, ProjectSection } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
-    const orgId = request.nextUrl.searchParams.get('org');
-    let projects = listProjects();
-    if (orgId) projects = projects.filter(p => p.orgId === orgId);
-    const items = projects.map(p => ({
+    const orgId = request.nextUrl.searchParams.get('org') ?? undefined;
+    const projects = await listProjects(orgId);
+    const items = await Promise.all(projects.map(async p => ({
       id: p.id,
       orgId: p.orgId,
       name: p.name,
       originalFilename: p.originalFilename,
       createdAt: p.createdAt,
       sectionCount: p.sections.length,
-      totalRows: getTotalRowCount(p.id, p),
+      totalRows: await getTotalRowCount(p.id),
       domains: p.sections.map(s => s.domain),
-    }));
+    })));
     return NextResponse.json(items);
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
@@ -43,10 +42,8 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const projectId = uuidv4();
 
-    // Save original Excel
-    saveExcelBuffer(projectId, buffer);
+    await saveExcelBuffer(projectId, buffer);
 
-    // Parse each selected sheet
     const sections: ProjectSection[] = [];
     for (const sheetName of selectedSheets) {
       const { schema, rows } = parseSheet(buffer, sheetName);
@@ -55,7 +52,7 @@ export async function POST(request: NextRequest) {
       const colorMaps = buildColorMaps(schema, bindings);
 
       sections.push({ sheetName, domain, schema, bindings, colorMaps });
-      writeRecords(projectId, sections.length - 1, rows);
+      await writeRecords(projectId, sections.length - 1, rows);
     }
 
     const project: StoredProject = {
@@ -67,7 +64,7 @@ export async function POST(request: NextRequest) {
       sections,
     };
 
-    saveProject(project);
+    await saveProject(project);
     return NextResponse.json({ id: projectId, name }, { status: 201 });
   } catch (e) {
     console.error('Create project error:', e);

@@ -62,7 +62,7 @@ create table if not exists public.org_members (
 
 create table if not exists public.projects (
   id                uuid primary key default gen_random_uuid(),
-  org_id            uuid references public.organizations(id) on delete cascade not null,
+  org_id            uuid references public.organizations(id) on delete cascade, -- nullable: projects without an org are personal
   name              text not null,
   original_filename text not null,
   created_by        uuid references auth.users(id) on delete set null,
@@ -153,38 +153,38 @@ create policy "orgs_update" on public.organizations for update using (
 );
 
 -- ── projects policies ─────────────────────────────────────────
+-- Projects with an org_id: accessible to org members
+-- Projects without an org_id: accessible to the creator only
 create policy "projects_select" on public.projects for select using (
-  exists (
+  projects.created_by = (select auth.uid()) or
+  (projects.org_id is not null and exists (
     select 1 from public.org_members om
     where om.org_id = projects.org_id
       and om.user_id = (select auth.uid())
-  )
+  ))
 );
 
 create policy "projects_insert" on public.projects for insert with check (
-  exists (
-    select 1 from public.org_members om
-    where om.org_id = projects.org_id
-      and om.user_id = (select auth.uid())
-  )
+  projects.created_by = (select auth.uid())
 );
 
 create policy "projects_delete" on public.projects for delete using (
   projects.created_by = (select auth.uid()) or
-  exists (
+  (projects.org_id is not null and exists (
     select 1 from public.org_members om
     where om.org_id = projects.org_id
       and om.user_id = (select auth.uid())
       and om.role in ('owner','admin')
-  )
+  ))
 );
 
 create policy "projects_update" on public.projects for update using (
-  exists (
+  projects.created_by = (select auth.uid()) or
+  (projects.org_id is not null and exists (
     select 1 from public.org_members om
     where om.org_id = projects.org_id
       and om.user_id = (select auth.uid())
-  )
+  ))
 );
 
 -- ── sections policies ─────────────────────────────────────────
