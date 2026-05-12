@@ -326,12 +326,11 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
   const cols = section.schema.columns;
   const rows = section.records;
 
-  // Smart column detection: find the cost/amount column by label OR by which col has the most numeric values
+  // ── Column detection ────────────────────────────────────────────────────────
   const catCol = cols[0];
   const amtCol = (() => {
     const byLabel = cols.find(c => /amount|cost|\$|monto|price|total/i.test(c.label) && c !== catCol);
     if (byLabel) return byLabel;
-    // Fall back to the column with the most non-zero numeric values
     return [...cols].slice(1).sort((a, b) => {
       const na = rows.filter(r => parseAmt(r[a.id]) !== 0).length;
       const nb = rows.filter(r => parseAmt(r[b.id]) !== 0).length;
@@ -339,140 +338,213 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
     })[0] ?? cols[1];
   })();
   const pctCol = cols.find(c => /%|percent/i.test(c.label));
-  // Description column: any string col that's not catCol and not amtCol
   const descCol = cols.find(c => c !== catCol && c !== amtCol && c !== pctCol &&
-    /item|service|descripci|description|purpose|note|reason|detail/i.test(c.label)) ??
-    cols.find(c => c !== catCol && c !== amtCol && c !== pctCol && rows.some(r => typeof r[c.id] === 'string' && String(r[c.id]).length > 2));
+    /item|service|descripci|description|purpose|note|reason|detail|concept/i.test(c.label)) ??
+    cols.find(c => c !== catCol && c !== amtCol && c !== pctCol &&
+      rows.some(r => typeof r[c.id] === 'string' && String(r[c.id]).length > 4));
 
-  // Separate section headers from item rows
+  // ── Noise filter: skip rows that are clearly not budget items ───────────────
+  // (column-header residue, note rows, long descriptive sentences with no money)
+  const colLabelSet = new Set(cols.map(c => c.label.trim().toLowerCase()));
+  function isNoise(row: Row): boolean {
+    const cat = String(row[catCol?.id] ?? '').trim();
+    const amt = parseAmt(row[amtCol?.id]);
+    if (!cat) return true;
+    // Single column-header character like "#" or a value that IS a column label
+    if (colLabelSet.has(cat.toLowerCase())) return true;
+    // Explicit note / N/A rows
+    if (/^(note[s]?:|n\/a|n\.?a\.?)\b/i.test(cat)) return true;
+    // Long descriptive sentence with zero amount and not ALL-CAPS (= preamble comment)
+    if (cat.length > 85 && amt === 0 && cat !== cat.toUpperCase()) return true;
+    return false;
+  }
+
+  // ── Section header detection ────────────────────────────────────────────────
   function isSection(row: Row): boolean {
-    const first = String(row[catCol?.id] ?? '').trim();
-    const others = cols.slice(1).map(c => row[c.id]);
-    const allOtherEmpty = others.every(v => v == null || v === '' || parseAmt(v) === 0);
+    const cat = String(row[catCol?.id] ?? '').trim();
+    // ALL-CAPS text with no amount (classic section header)
+    const amt = parseAmt(row[amtCol?.id]);
+    const allOtherEmpty = cols.slice(1).every(c => {
+      const v = row[c.id];
+      return v == null || v === '' || parseAmt(v) === 0;
+    });
     return (
       allOtherEmpty &&
-      first.length > 3 &&
-      first === first.toUpperCase() &&
-      /[A-Z]{2}/.test(first) &&
-      !/^\d+$/.test(first)
+      amt === 0 &&
+      cat.length > 3 &&
+      cat === cat.toUpperCase() &&
+      /[A-Z]{2}/.test(cat) &&
+      !/^\d+$/.test(cat)
     );
   }
 
-  // Group rows: section headers become group titles, filter total/gross summary rows
+  // ── Smart title: if catCol is a row-number, promote descCol ────────────────
+  function rowTitle(row: Row): { label: string; badge: string | null } {
+    const cat = String(row[catCol?.id] ?? '').trim();
+    const desc = descCol ? String(row[descCol.id] ?? '').trim() : '';
+    // Purely numeric (row number like "1", "2", "42")
+    if (/^\d{1,4}$/.test(cat) && desc) return { label: desc, badge: cat };
+    // If cat is empty but desc exists
+    if (!cat && desc) return { label: desc, badge: null };
+    return { label: cat, badge: null };
+  }
+
+  // ── Build groups ────────────────────────────────────────────────────────────
   type Group = { header: string | null; items: Row[] };
   const groups: Group[] = [];
   let cur: Group = { header: null, items: [] };
 
   for (const row of rows) {
-    const cat = String(row[catCol?.id] ?? '').trim();
-    if (!cat) continue;
+    if (isNoise(row)) continue;
     if (isSection(row)) {
       if (cur.items.length > 0 || cur.header) groups.push(cur);
-      cur = { header: cat, items: [] };
+      cur = { header: String(row[catCol?.id] ?? '').trim(), items: [] };
     } else {
       cur.items.push(row);
     }
   }
   if (cur.items.length > 0 || cur.header) groups.push(cur);
 
-  // Total = sum of all positive amounts (use items only, not group headers)
   const allItems = groups.flatMap(g => g.items);
   const totalAmt = allItems.reduce((s, r) => {
     const v = parseAmt(r[amtCol?.id]);
     return v > 0 ? s + v : s;
   }, 0);
 
+  const fmtMoney = (n: number) =>
+    (n < 0 ? '−' : '') +
+    '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Summary card */}
-      <div className="rounded-xl p-5 flex items-center justify-between" style={{ background: C.indigoBg, border: `0.5px solid rgba(79,70,229,0.2)` }}>
+      {/* ── Summary banner ── */}
+      <div className="rounded-xl p-5 flex items-center justify-between"
+        style={{ background: C.indigoBg, border: `0.5px solid rgba(79,70,229,0.2)` }}>
         <div>
-          <div className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: C.indigo }}>Total Budget</div>
-          <div className="text-[32px] font-semibold leading-none" style={{ color: C.indigo }}>{fmt(totalAmt, '$')}</div>
-          <div className="text-[12px] mt-1" style={{ color: C.indigo, opacity: 0.7 }}>{allItems.length} items · {groups.length} section{groups.length !== 1 ? 's' : ''}</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: C.indigo }}>Total Budget</div>
+          <div className="text-[30px] font-semibold leading-none tabular-nums" style={{ color: C.indigo }}>{fmtMoney(totalAmt)}</div>
+          <div className="text-[11px] mt-1.5" style={{ color: C.indigo, opacity: 0.65 }}>
+            {allItems.length} item{allItems.length !== 1 ? 's' : ''} · {groups.length} group{groups.length !== 1 ? 's' : ''}
+          </div>
         </div>
         <button onClick={onAddRow}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold text-white transition-all hover:opacity-90"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
           style={{ background: C.indigo, boxShadow: '0 2px 8px rgba(79,70,229,0.25)' }}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.5v10M1.5 6.5h10" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M6.5 1.5v10M1.5 6.5h10" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
+          </svg>
           Add item
         </button>
       </div>
 
-      {/* Grouped item cards */}
-      {groups.map((grp, gi) => (
-        <div key={gi} className="flex flex-col gap-0 rounded-xl overflow-hidden" style={{ border: `0.5px solid ${C.border}` }}>
-          {/* Section header */}
-          {grp.header && (
-            <div className="px-5 py-3 flex items-center gap-2" style={{ background: C.indigoBg, borderBottom: `0.5px solid ${C.border}` }}>
-              <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: C.indigo }}>{grp.header}</span>
-              <span className="text-[11px] ml-auto" style={{ color: C.indigo, opacity: 0.7 }}>
-                {fmt(grp.items.reduce((s, r) => s + Math.max(0, parseAmt(r[amtCol?.id])), 0), '$')}
-              </span>
-            </div>
-          )}
-
-          {/* Items */}
-          {grp.items.map((row, i) => {
-            const cat = String(row[catCol?.id] ?? '');
-            const rawAmt = parseAmt(row[amtCol?.id]);
-            const desc = descCol ? String(row[descCol.id] ?? '') : '';
-            const pct = pctCol
-              ? parseAmt(row[pctCol.id])
-              : totalAmt > 0 ? rawAmt / totalAmt : 0;
-            const pctDisplay = (Math.abs(pct) <= 1 ? pct * 100 : pct).toFixed(1);
-            const barPct = totalAmt > 0 ? Math.max(0, rawAmt / totalAmt) * 100 : 0;
-            const isNeg = rawAmt < 0;
-            const isTotal = /^(total|subtotal|gross|net)/i.test(cat);
-
-            return (
-              <div key={row._id ?? i}
-                onClick={() => onEditRow(row)}
-                className="cursor-pointer"
-                style={{
-                  background: isTotal ? C.bg2 : C.bg,
-                  borderBottom: i < grp.items.length - 1 ? `0.5px solid ${C.border}` : 'none',
-                  padding: '12px 20px',
-                  fontWeight: isTotal ? 700 : 400,
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = C.bg3)}
-                onMouseLeave={e => (e.currentTarget.style.background = isTotal ? C.bg2 : C.bg)}>
-                <div className="flex items-start justify-between gap-4">
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div className="text-[13px] truncate" style={{ color: C.text, fontWeight: isTotal ? 700 : 500 }}>{cat}</div>
-                    {desc && desc !== cat && (
-                      <div className="text-[11px] mt-0.5 truncate" style={{ color: C.text3 }}>{truncate(desc, 80)}</div>
-                    )}
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-[15px] font-semibold" style={{ color: isNeg ? C.red : C.text, fontVariantNumeric: 'tabular-nums' }}>
-                      {isNeg ? `−$${Math.abs(rawAmt).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : fmt(rawAmt, '$')}
-                    </div>
-                    {!isTotal && pctDisplay !== '0.0' && (
-                      <div className="text-[10px]" style={{ color: C.text3 }}>{pctDisplay}%</div>
-                    )}
-                  </div>
-                </div>
-                {/* Progress bar (only for positive non-total items) */}
-                {!isTotal && !isNeg && rawAmt > 0 && (
-                  <div className="mt-2 h-1 rounded-full" style={{ background: C.bg3 }}>
-                    <div className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${barPct}%`, background: CHART_COLORS[gi % CHART_COLORS.length] }} />
-                  </div>
-                )}
+      {/* ── Groups ── */}
+      {groups.map((grp, gi) => {
+        const grpTotal = grp.items.reduce((s, r) => s + Math.max(0, parseAmt(r[amtCol?.id])), 0);
+        const color = CHART_COLORS[gi % CHART_COLORS.length];
+        return (
+          <div key={gi} className="rounded-xl overflow-hidden" style={{ border: `0.5px solid ${C.border}` }}>
+            {/* Section header */}
+            {grp.header && (
+              <div className="px-5 py-3 flex items-center gap-3"
+                style={{ background: C.bg2, borderBottom: `0.5px solid ${C.border}` }}>
+                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
+                <span className="text-[12px] font-semibold flex-1 truncate" style={{ color: C.text2 }}>
+                  {grp.header}
+                </span>
+                <span className="text-[12px] font-semibold tabular-nums flex-shrink-0" style={{ color: C.text }}>
+                  {fmtMoney(grpTotal)}
+                </span>
               </div>
-            );
-          })}
+            )}
 
-          {grp.items.length === 0 && (
-            <div className="px-5 py-3 text-[12px]" style={{ color: C.text3 }}>No items in this section.</div>
-          )}
-        </div>
-      ))}
+            {/* Item rows */}
+            {grp.items.map((row, i) => {
+              const { label, badge } = rowTitle(row);
+              const rawAmt = parseAmt(row[amtCol?.id]);
+              const pctOfTotal = totalAmt > 0 ? rawAmt / totalAmt : 0;
+              const barWidth = totalAmt > 0 ? Math.max(0, rawAmt / totalAmt) * 100 : 0;
+              const isNeg = rawAmt < 0;
+              const isSubtotal = /^(total|subtotal|gross|net|sum)\b/i.test(label);
+              const extraDesc = descCol && !badge
+                ? String(row[descCol.id] ?? '').trim()
+                : '';
+
+              return (
+                <div key={row._id ?? i}
+                  onClick={() => onEditRow(row)}
+                  className="cursor-pointer group"
+                  style={{
+                    padding: '11px 20px',
+                    background: isSubtotal ? C.bg2 : C.bg,
+                    borderBottom: i < grp.items.length - 1 ? `0.5px solid ${C.border}` : 'none',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = C.bg3)}
+                  onMouseLeave={e => (e.currentTarget.style.background = isSubtotal ? C.bg2 : C.bg)}>
+
+                  <div className="flex items-center gap-3">
+                    {/* Row-number badge */}
+                    {badge && (
+                      <span className="text-[10px] font-semibold w-5 h-5 rounded flex items-center justify-center flex-shrink-0 tabular-nums"
+                        style={{ background: color + '20', color }}>
+                        {badge}
+                      </span>
+                    )}
+
+                    {/* Label + sub-description */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] leading-snug"
+                        style={{ color: C.text, fontWeight: isSubtotal ? 700 : 500 }}>
+                        {label || '—'}
+                      </div>
+                      {extraDesc && extraDesc !== label && (
+                        <div className="text-[11px] mt-0.5 truncate" style={{ color: C.text3 }}>
+                          {truncate(extraDesc, 70)}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Amount */}
+                    <div className="text-right flex-shrink-0 ml-4">
+                      <div className="text-[14px] font-semibold tabular-nums"
+                        style={{ color: isNeg ? C.red : isSubtotal ? C.text : C.text }}>
+                        {fmtMoney(rawAmt)}
+                      </div>
+                      {!isSubtotal && rawAmt > 0 && (
+                        <div className="text-[10px] tabular-nums mt-0.5" style={{ color: C.text3 }}>
+                          {(pctOfTotal * 100).toFixed(1)}%
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Edit chevron */}
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+                      className="flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity"
+                      style={{ color: C.text3 }}>
+                      <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+
+                  {/* Proportional bar (only for positive non-subtotal items) */}
+                  {!isSubtotal && !isNeg && rawAmt > 0 && barWidth > 0 && (
+                    <div className="mt-2 h-0.5 rounded-full" style={{ background: C.bg3 }}>
+                      <div className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${barWidth}%`, background: color }} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {grp.items.length === 0 && (
+              <div className="px-5 py-4 text-[12px]" style={{ color: C.text3 }}>Empty section</div>
+            )}
+          </div>
+        );
+      })}
 
       {groups.length === 0 && (
-        <div className="rounded-xl p-8 text-center" style={{ background: C.bg, border: `0.5px solid ${C.border}`, color: C.text3 }}>
-          No budget items found.
+        <div className="rounded-xl p-10 text-center" style={{ background: C.bg, border: `0.5px solid ${C.border}`, color: C.text3 }}>
+          No budget items found. Click <strong>Add item</strong> to get started.
         </div>
       )}
     </div>
