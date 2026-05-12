@@ -343,48 +343,46 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
     cols.find(c => c !== catCol && c !== amtCol && c !== pctCol &&
       rows.some(r => typeof r[c.id] === 'string' && String(r[c.id]).length > 4));
 
-  // ── Noise filter: skip rows that are clearly not budget items ───────────────
-  // (column-header residue, note rows, long descriptive sentences with no money)
-  const colLabelSet = new Set(cols.map(c => c.label.trim().toLowerCase()));
+  // ── Helper: is this text predominantly uppercase? (≥80 % of letters) ───────
+  function looksLikeHeader(cat: string): boolean {
+    if (cat.length < 4) return false;
+    const letters = cat.replace(/[^A-Za-z]/g, '');
+    if (letters.length < 3) return false;
+    const upper = letters.split('').filter(c => c >= 'A' && c <= 'Z').length;
+    return upper / letters.length >= 0.80;
+  }
+
+  // ── Section header: 80 %+ uppercase letters, not a bare number ─────────────
+  function isSection(row: Row): boolean {
+    const cat = String(row[catCol?.id] ?? '').trim();
+    if (!cat || /^\d+$/.test(cat)) return false;
+    return looksLikeHeader(cat);
+  }
+
+  // ── Noise: rows that add no value to the view ──────────────────────────────
   function isNoise(row: Row): boolean {
     const cat = String(row[catCol?.id] ?? '').trim();
     const amt = parseAmt(row[amtCol?.id]);
     if (!cat) return true;
-    // Single column-header character like "#" or a value that IS a column label
-    if (colLabelSet.has(cat.toLowerCase())) return true;
-    // Explicit note / N/A rows
-    if (/^(note[s]?:|n\/a|n\.?a\.?)\b/i.test(cat)) return true;
-    // Long descriptive sentence with zero amount and not ALL-CAPS (= preamble comment)
-    if (cat.length > 85 && amt === 0 && cat !== cat.toUpperCase()) return true;
+    // Pure punctuation / special placeholder (e.g. "#", "-", "—")
+    if (/^[#*\-–—/\\.]+$/.test(cat)) return true;
+    // Explicit note rows
+    if (/^note[s]?:/i.test(cat)) return true;
+    // Column-header row: ≥2 cells match their own column label
+    const headerHits = cols.filter(c =>
+      String(row[c.id] ?? '').trim().toLowerCase() === c.label.trim().toLowerCase()
+    ).length;
+    if (headerHits >= 2) return true;
+    // Zero-amount rows that don't look like section headers → preamble / formula / comment
+    if (amt === 0 && !looksLikeHeader(cat)) return true;
     return false;
   }
 
-  // ── Section header detection ────────────────────────────────────────────────
-  function isSection(row: Row): boolean {
-    const cat = String(row[catCol?.id] ?? '').trim();
-    // ALL-CAPS text with no amount (classic section header)
-    const amt = parseAmt(row[amtCol?.id]);
-    const allOtherEmpty = cols.slice(1).every(c => {
-      const v = row[c.id];
-      return v == null || v === '' || parseAmt(v) === 0;
-    });
-    return (
-      allOtherEmpty &&
-      amt === 0 &&
-      cat.length > 3 &&
-      cat === cat.toUpperCase() &&
-      /[A-Z]{2}/.test(cat) &&
-      !/^\d+$/.test(cat)
-    );
-  }
-
-  // ── Smart title: if catCol is a row-number, promote descCol ────────────────
+  // ── Smart title: row-number prefix → promote description ───────────────────
   function rowTitle(row: Row): { label: string; badge: string | null } {
     const cat = String(row[catCol?.id] ?? '').trim();
     const desc = descCol ? String(row[descCol.id] ?? '').trim() : '';
-    // Purely numeric (row number like "1", "2", "42")
     if (/^\d{1,4}$/.test(cat) && desc) return { label: desc, badge: cat };
-    // If cat is empty but desc exists
     if (!cat && desc) return { label: desc, badge: null };
     return { label: cat, badge: null };
   }
@@ -404,9 +402,25 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
     }
   }
   if (cur.items.length > 0 || cur.header) groups.push(cur);
+  // Drop empty header-only groups (section headers with no items below them)
+  const filledGroups = groups.filter(g => g.items.length > 0);
 
-  const allItems = groups.flatMap(g => g.items);
-  const totalAmt = allItems.reduce((s, r) => {
+  const allItems = filledGroups.flatMap(g => g.items);
+  // Total = sum of leaf items only (skip subtotal rows to avoid double-counting)
+  const isSubtotalLabel = (label: string) =>
+    /\bsubtotal\b/i.test(label) || /\btotal\s*$/.test(label) ||
+    /\bsubtotal\b|\btotal\s+claimed\b|\bgrand\s+total\b/i.test(label);
+
+  const leafItems = allItems.filter(r => {
+    const { label } = (() => {
+      const cat = String(r[catCol?.id] ?? '').trim();
+      const desc = descCol ? String(r[descCol.id] ?? '').trim() : '';
+      if (/^\d{1,4}$/.test(cat) && desc) return { label: desc };
+      return { label: cat };
+    })();
+    return !isSubtotalLabel(label);
+  });
+  const totalAmt = leafItems.reduce((s, r) => {
     const v = parseAmt(r[amtCol?.id]);
     return v > 0 ? s + v : s;
   }, 0);
@@ -424,7 +438,7 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
           <div className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: C.indigo }}>Total Budget</div>
           <div className="text-[30px] font-semibold leading-none tabular-nums" style={{ color: C.indigo }}>{fmtMoney(totalAmt)}</div>
           <div className="text-[11px] mt-1.5" style={{ color: C.indigo, opacity: 0.65 }}>
-            {allItems.length} item{allItems.length !== 1 ? 's' : ''} · {groups.length} group{groups.length !== 1 ? 's' : ''}
+            {leafItems.length} item{leafItems.length !== 1 ? 's' : ''} across {filledGroups.length} group{filledGroups.length !== 1 ? 's' : ''}
           </div>
         </div>
         <button onClick={onAddRow}
@@ -438,9 +452,18 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
       </div>
 
       {/* ── Groups ── */}
-      {groups.map((grp, gi) => {
-        const grpTotal = grp.items.reduce((s, r) => s + Math.max(0, parseAmt(r[amtCol?.id])), 0);
+      {filledGroups.map((grp, gi) => {
         const color = CHART_COLORS[gi % CHART_COLORS.length];
+        // Section total = sum of leaf (non-subtotal) items in this group
+        const grpLeafAmt = grp.items
+          .filter(r => {
+            const cat = String(r[catCol?.id] ?? '').trim();
+            const desc = descCol ? String(r[descCol.id] ?? '').trim() : '';
+            const lbl = /^\d{1,4}$/.test(cat) && desc ? desc : cat;
+            return !isSubtotalLabel(lbl);
+          })
+          .reduce((s, r) => s + Math.max(0, parseAmt(r[amtCol?.id])), 0);
+
         return (
           <div key={gi} className="rounded-xl overflow-hidden" style={{ border: `0.5px solid ${C.border}` }}>
             {/* Section header */}
@@ -448,11 +471,11 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
               <div className="px-5 py-3 flex items-center gap-3"
                 style={{ background: C.bg2, borderBottom: `0.5px solid ${C.border}` }}>
                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
-                <span className="text-[12px] font-semibold flex-1 truncate" style={{ color: C.text2 }}>
+                <span className="text-[12px] font-semibold flex-1" style={{ color: C.text2 }}>
                   {grp.header}
                 </span>
-                <span className="text-[12px] font-semibold tabular-nums flex-shrink-0" style={{ color: C.text }}>
-                  {fmtMoney(grpTotal)}
+                <span className="text-[13px] font-bold tabular-nums flex-shrink-0" style={{ color: C.text }}>
+                  {fmtMoney(grpLeafAmt)}
                 </span>
               </div>
             )}
@@ -462,9 +485,9 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
               const { label, badge } = rowTitle(row);
               const rawAmt = parseAmt(row[amtCol?.id]);
               const pctOfTotal = totalAmt > 0 ? rawAmt / totalAmt : 0;
-              const barWidth = totalAmt > 0 ? Math.max(0, rawAmt / totalAmt) * 100 : 0;
+              const barWidth = Math.max(0, pctOfTotal) * 100;
               const isNeg = rawAmt < 0;
-              const isSubtotal = /^(total|subtotal|gross|net|sum)\b/i.test(label);
+              const isSub = isSubtotalLabel(label);
               const extraDesc = descCol && !badge
                 ? String(row[descCol.id] ?? '').trim()
                 : '';
@@ -474,75 +497,66 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
                   onClick={() => onEditRow(row)}
                   className="cursor-pointer group"
                   style={{
-                    padding: '11px 20px',
-                    background: isSubtotal ? C.bg2 : C.bg,
+                    padding: isSub ? '10px 20px' : '11px 20px',
+                    background: isSub ? C.bg2 : C.bg,
                     borderBottom: i < grp.items.length - 1 ? `0.5px solid ${C.border}` : 'none',
                   }}
                   onMouseEnter={e => (e.currentTarget.style.background = C.bg3)}
-                  onMouseLeave={e => (e.currentTarget.style.background = isSubtotal ? C.bg2 : C.bg)}>
+                  onMouseLeave={e => (e.currentTarget.style.background = isSub ? C.bg2 : C.bg)}>
 
                   <div className="flex items-center gap-3">
-                    {/* Row-number badge */}
                     {badge && (
-                      <span className="text-[10px] font-semibold w-5 h-5 rounded flex items-center justify-center flex-shrink-0 tabular-nums"
-                        style={{ background: color + '20', color }}>
+                      <span className="text-[10px] font-bold w-5 h-5 rounded flex items-center justify-center flex-shrink-0"
+                        style={{ background: color + '18', color }}>
                         {badge}
                       </span>
                     )}
 
-                    {/* Label + sub-description */}
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] leading-snug"
-                        style={{ color: C.text, fontWeight: isSubtotal ? 700 : 500 }}>
+                        style={{ color: C.text, fontWeight: isSub ? 700 : 500 }}>
                         {label || '—'}
                       </div>
-                      {extraDesc && extraDesc !== label && (
+                      {extraDesc && extraDesc !== label && !isSub && (
                         <div className="text-[11px] mt-0.5 truncate" style={{ color: C.text3 }}>
-                          {truncate(extraDesc, 70)}
+                          {truncate(extraDesc, 72)}
                         </div>
                       )}
                     </div>
 
-                    {/* Amount */}
-                    <div className="text-right flex-shrink-0 ml-4">
+                    <div className="text-right flex-shrink-0 ml-3">
                       <div className="text-[14px] font-semibold tabular-nums"
-                        style={{ color: isNeg ? C.red : isSubtotal ? C.text : C.text }}>
+                        style={{ color: isNeg ? C.red : C.text }}>
                         {fmtMoney(rawAmt)}
                       </div>
-                      {!isSubtotal && rawAmt > 0 && (
+                      {!isSub && rawAmt > 0 && totalAmt > 0 && (
                         <div className="text-[10px] tabular-nums mt-0.5" style={{ color: C.text3 }}>
                           {(pctOfTotal * 100).toFixed(1)}%
                         </div>
                       )}
                     </div>
 
-                    {/* Edit chevron */}
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
-                      className="flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity"
+                      className="flex-shrink-0 opacity-0 group-hover:opacity-30 transition-opacity"
                       style={{ color: C.text3 }}>
                       <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
 
-                  {/* Proportional bar (only for positive non-subtotal items) */}
-                  {!isSubtotal && !isNeg && rawAmt > 0 && barWidth > 0 && (
+                  {!isSub && !isNeg && rawAmt > 0 && barWidth > 0.1 && (
                     <div className="mt-2 h-0.5 rounded-full" style={{ background: C.bg3 }}>
                       <div className="h-full rounded-full transition-all duration-700"
-                        style={{ width: `${barWidth}%`, background: color }} />
+                        style={{ width: `${Math.min(barWidth, 100)}%`, background: color }} />
                     </div>
                   )}
                 </div>
               );
             })}
-
-            {grp.items.length === 0 && (
-              <div className="px-5 py-4 text-[12px]" style={{ color: C.text3 }}>Empty section</div>
-            )}
           </div>
         );
       })}
 
-      {groups.length === 0 && (
+      {filledGroups.length === 0 && (
         <div className="rounded-xl p-10 text-center" style={{ background: C.bg, border: `0.5px solid ${C.border}`, color: C.text3 }}>
           No budget items found. Click <strong>Add item</strong> to get started.
         </div>
