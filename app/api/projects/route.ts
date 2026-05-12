@@ -44,17 +44,19 @@ export async function POST(request: NextRequest) {
 
     await saveExcelBuffer(projectId, buffer);
 
+    // Parse all sheets first
     const sections: ProjectSection[] = [];
+    const allRows: ReturnType<typeof parseSheet>['rows'][] = [];
     for (const sheetName of selectedSheets) {
       const { schema, rows } = parseSheet(buffer, sheetName);
       const { domain } = classifyDomain(schema.columns.map(c => c.excelHeader));
       const bindings = bindColumns(schema, domain);
       const colorMaps = buildColorMaps(schema, bindings);
-
       sections.push({ sheetName, domain, schema, bindings, colorMaps });
-      await writeRecords(projectId, sections.length - 1, rows);
+      allRows.push(rows);
     }
 
+    // Save project + sections to DB first so section IDs exist
     const project: StoredProject = {
       id: projectId,
       orgId,
@@ -63,8 +65,12 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
       sections,
     };
-
     await saveProject(project);
+
+    // Now write records (sections exist in DB)
+    for (let i = 0; i < sections.length; i++) {
+      await writeRecords(projectId, i, allRows[i]);
+    }
     return NextResponse.json({ id: projectId, name }, { status: 201 });
   } catch (e) {
     console.error('Create project error:', e);

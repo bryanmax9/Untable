@@ -1,6 +1,5 @@
 {
   "/api/orgs/[id]/route": "app/api/orgs/[id]/route.js",
-  "/api/orgs/route": "app/api/orgs/route.js",
-  "/org/[id]/page": "app/org/[id]/page.js",
-  "/page": "app/page.js"
+  "/auth/login/page": "app/auth/login/page.js",
+  "/org/[id]/page": "app/org/[id]/page.js"
 }
