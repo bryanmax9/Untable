@@ -21,6 +21,9 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
   const [apiError, setApiError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
+  const [deleteStep, setDeleteStep] = useState<'confirm' | 'deleting'>('confirm');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const router = useRouter();
   const sb = createClient();
 
@@ -46,6 +49,31 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
     setTimeout(() => setCopied(false), 2000);
   }
 
+  async function downloadProject(projectId: string, filename: string) {
+    const res = await fetch(`/api/projects/${projectId}/download`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename.replace(/\.[^.]+$/, '') + '_updated.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function doDeleteProject(downloadFirst: boolean) {
+    if (!deletingProject) return;
+    setDeleteStep('deleting'); setDeleteError(null);
+    try {
+      if (downloadFirst) await downloadProject(deletingProject.id, deletingProject.original_filename);
+      const res = await fetch(`/api/projects/${deletingProject.id}`, { method: 'DELETE' });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      setData(prev => prev ? { ...prev, projects: prev.projects.filter(p => p.id !== deletingProject.id) } : prev);
+      setDeletingProject(null); setDeleteStep('confirm');
+    } catch (e) {
+      setDeleteError(String(e)); setDeleteStep('confirm');
+    }
+  }
+
   if (loading) return (
     <Shell user={user} onSignOut={signOut} tx={tx}>
       <div className="py-20 text-center text-slate-400">Loading…</div>
@@ -69,6 +97,42 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
 
   return (
     <Shell user={user} onSignOut={signOut} tx={tx}>
+      {/* Delete project modal */}
+      {deletingProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+            <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" className="text-amber-500">
+                <path d="M11 7v5M11 15h.01M21 11a10 10 0 11-20 0 10 10 0 0120 0z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <h2 className="text-[16px] font-semibold text-slate-900 text-center mb-1">Delete project?</h2>
+            <p className="text-[13px] text-slate-500 text-center mb-1">
+              <span className="font-medium text-slate-700">{deletingProject.name}</span>
+            </p>
+            <p className="text-[12px] text-slate-400 text-center mb-5">
+              Download the latest Excel first to keep a copy of any edits made in the app.
+            </p>
+            {deleteError && <p className="text-[12px] text-rose-500 text-center mb-3">{deleteError}</p>}
+            <div className="flex flex-col gap-2">
+              <button onClick={() => doDeleteProject(true)} disabled={deleteStep === 'deleting'}
+                className="w-full py-2.5 rounded-lg text-[13px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors disabled:opacity-50">
+                {deleteStep === 'deleting' ? 'Working…' : 'Download Excel, then delete'}
+              </button>
+              <button onClick={() => doDeleteProject(false)} disabled={deleteStep === 'deleting'}
+                className="w-full py-2.5 rounded-lg text-[13px] font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors disabled:opacity-50">
+                Delete without downloading
+              </button>
+              <button onClick={() => { setDeletingProject(null); setDeleteStep('confirm'); setDeleteError(null); }}
+                disabled={deleteStep === 'deleting'}
+                className="w-full py-2.5 rounded-lg text-[13px] font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-50">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Org header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -112,17 +176,26 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
       ) : (
         <div className="grid grid-cols-3 gap-4">
           {data.projects.map(p => (
-            <Link key={p.id} href={`/projects/${p.id}`}
-              className="group bg-white rounded-xl border border-black/[0.06] p-5 hover:shadow-md hover:border-indigo-200 transition-all block">
-              <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center mb-3">
-                <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <div key={p.id} className="relative group">
+              <Link href={`/projects/${p.id}`}
+                className="bg-white rounded-xl border border-black/[0.06] p-5 hover:shadow-md hover:border-indigo-200 transition-all block">
+                <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center mb-3">
+                  <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-[14px] font-semibold text-slate-900 mb-1 truncate pr-6 group-hover:text-indigo-700 transition-colors">{p.name}</h3>
+                <p className="text-[11px] text-slate-400 truncate mb-3">{p.original_filename}</p>
+                <div className="text-[11px] text-slate-400 pt-3 border-t border-black/[0.05]">{fmtDate(p.created_at.slice(0, 10))}</div>
+              </Link>
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingProject(p); setDeleteStep('confirm'); setDeleteError(null); }}
+                className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 transition-opacity bg-rose-50 hover:bg-rose-100 text-rose-400 hover:text-rose-600">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M2 3.5h9M5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M3.5 3.5l.5 7h5l.5-7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-              </div>
-              <h3 className="text-[14px] font-semibold text-slate-900 mb-1 truncate group-hover:text-indigo-700 transition-colors">{p.name}</h3>
-              <p className="text-[11px] text-slate-400 truncate mb-3">{p.original_filename}</p>
-              <div className="text-[11px] text-slate-400 pt-3 border-t border-black/[0.05]">{fmtDate(p.created_at.slice(0, 10))}</div>
-            </Link>
+              </button>
+            </div>
           ))}
           <Link href={`/upload?org=${id}`}
             className="bg-white rounded-xl border-2 border-dashed border-slate-200 p-5 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all flex flex-col items-center justify-center gap-2 min-h-[160px]">

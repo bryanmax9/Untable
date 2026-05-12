@@ -607,6 +607,150 @@ function DetailView({
   );
 }
 
+// ─── Table Grid View (for generic_table domain) ───────────────────────────────
+function TableGridView({ section, projectId, sectionIdx, search, rows, setRows, tx }: {
+  section: SectionWithRecords; projectId: string; sectionIdx: number; search: string;
+  rows: Row[]; setRows: React.Dispatch<React.SetStateAction<Row[]>>; tx: Tx;
+}) {
+  const [addOpen, setAddOpen] = useState(false);
+  const [editRow, setEditRow] = useState<Row | null>(null);
+  const [sortCol, setSortCol] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const allCols = section.schema.columns;
+  const blank = Object.fromEntries(allCols.map(c => [c.id, '']));
+
+  const filtered = rows.filter(r => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return Object.values(r).some(x => x != null && String(x).toLowerCase().includes(q));
+  });
+
+  const displayed = sortCol
+    ? [...filtered].sort((a, b) => {
+        const av = String(a[sortCol] ?? '');
+        const bv = String(b[sortCol] ?? '');
+        const n = av.localeCompare(bv, undefined, { numeric: true });
+        return sortDir === 'asc' ? n : -n;
+      })
+    : filtered;
+
+  function toggleSort(colId: string) {
+    if (sortCol === colId) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(colId); setSortDir('asc'); }
+  }
+
+  return (
+    <div className="flex flex-col gap-3 h-full">
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <span className="text-[12px]" style={{ color: C.text3 }}>{displayed.length} / {rows.length} rows</span>
+        <div className="flex-1" />
+        <button onClick={() => setAddOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+          style={{ background: C.indigo600, boxShadow: `0 2px 8px rgba(79,70,229,0.25)` }}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.5v10M1.5 6.5h10" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>
+          {tx.add}
+        </button>
+      </div>
+
+      <div className="rounded-xl overflow-auto flex-1" style={{ border: `0.5px solid ${C.border}`, background: C.bg }}>
+        <table className="w-full border-collapse" style={{ fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: C.bg2, borderBottom: `0.5px solid ${C.borderMd}` }}>
+              {allCols.map(col => (
+                <th key={col.id}
+                  className="px-4 py-2.5 text-left font-semibold whitespace-nowrap cursor-pointer select-none"
+                  style={{ color: C.text2, borderRight: `0.5px solid ${C.border}`, minWidth: 100 }}
+                  onClick={() => toggleSort(col.id)}>
+                  <div className="flex items-center gap-1.5">
+                    {col.label}
+                    {sortCol === col.id && (
+                      <svg width="9" height="9" viewBox="0 0 9 9" fill="none" style={{ color: C.indigo600 }}>
+                        <path d={sortDir === 'asc' ? 'M4.5 1.5l3 4.5h-6l3-4.5z' : 'M4.5 7.5l3-4.5h-6l3 4.5z'} fill="currentColor"/>
+                      </svg>
+                    )}
+                  </div>
+                </th>
+              ))}
+              <th className="w-8" />
+            </tr>
+          </thead>
+          <tbody>
+            {displayed.length === 0 ? (
+              <tr>
+                <td colSpan={allCols.length + 1} className="px-4 py-16 text-center" style={{ color: C.text3 }}>
+                  {rows.length === 0 ? tx.noRows : tx.noResults}
+                </td>
+              </tr>
+            ) : displayed.map((row, i) => (
+              <tr key={row._id ?? i}
+                onClick={() => setEditRow(row)}
+                className="cursor-pointer"
+                style={{ borderBottom: `0.5px solid ${C.border}` }}
+                onMouseEnter={e => (e.currentTarget.style.background = C.bg2)}
+                onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                {allCols.map(col => {
+                  const val = String(row[col.id] ?? '');
+                  return (
+                    <td key={col.id} className="px-4 py-2.5"
+                      style={{ color: C.text, borderRight: `0.5px solid ${C.border}`, verticalAlign: 'middle', maxWidth: 240 }}>
+                      {col.type === 'enum' && val
+                        ? <StatusBadge val={val} col={col} />
+                        : col.type === 'url' && val
+                        ? <a href={val} target="_blank" rel="noopener" onClick={e => e.stopPropagation()}
+                            className="hover:underline truncate block" style={{ color: C.indigo600, maxWidth: 200 }}>link ↗</a>
+                        : <span className="truncate block" style={{ maxWidth: 220 }} title={val}>{val}</span>
+                      }
+                    </td>
+                  );
+                })}
+                <td className="px-3 py-2.5 text-center flex-shrink-0" style={{ color: C.text3 }}>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {addOpen && (
+        <RowModal title={tx.addRowTitle} columns={allCols} initial={blank} rows={rows}
+          onSubmit={async vals => {
+            const res = await fetch(`/api/projects/${projectId}/records?section=${sectionIdx}`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(vals),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            setRows(p => [...p, data]);
+          }}
+          onClose={() => setAddOpen(false)} tx={tx} />
+      )}
+      {editRow && (
+        <RowModal title={tx.editRowTitle} columns={allCols}
+          initial={Object.fromEntries(allCols.map(c => [c.id, String(editRow[c.id] ?? '')]))}
+          rows={rows}
+          onSubmit={async vals => {
+            const res = await fetch(`/api/projects/${projectId}/records/${editRow._id}?section=${sectionIdx}`, {
+              method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(vals),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            setRows(p => p.map(r => r._id === data._id ? data : r));
+            setEditRow(data);
+          }}
+          onDelete={async () => {
+            if (!confirm(tx.confirmDel)) return;
+            await fetch(`/api/projects/${projectId}/records/${editRow._id}?section=${sectionIdx}`, { method: 'DELETE' });
+            setRows(p => p.filter(r => r._id !== editRow._id));
+            setEditRow(null);
+          }}
+          onClose={() => setEditRow(null)} tx={tx} />
+      )}
+    </div>
+  );
+}
+
 // ─── Dashboard / Overview ─────────────────────────────────────────────────────
 function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }: {
   section: SectionWithRecords; onViewRow: (r: Row) => void;
@@ -1214,7 +1358,20 @@ function SectionShell({ section, projectId, sectionIdx, search, tx: _txIgnored }
     );
   }
 
-  // ── Records (standard table + dashboard) ───────────────────────────────────
+  // ── Generic table: proper data grid ───────────────────────────────────────
+  if (section.domain === 'generic_table') {
+    const [rows, setRows] = useState<Row[]>(section.records);
+    return (
+      <div className="flex h-full overflow-hidden">
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <TableGridView section={section} projectId={projectId} sectionIdx={sectionIdx}
+            search={search} rows={rows} setRows={setRows} tx={tx} />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Records (standard card dashboard) ─────────────────────────────────────
   const [view, setView] = useState<ViewId>('dashboard');
   const [prevView, setPrevView] = useState<ViewId>('dashboard');
   const [rows, setRows] = useState<Row[]>(section.records);

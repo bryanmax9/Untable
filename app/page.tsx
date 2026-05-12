@@ -16,6 +16,9 @@ export default function HomePage() {
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
   const router = useRouter();
   const sb = createClient();
 
@@ -30,6 +33,20 @@ export default function HomePage() {
   async function signOut() {
     await sb.auth.signOut();
     router.push('/auth/login');
+  }
+
+  async function deleteAccount() {
+    setDeletingAccount(true); setDeleteAccountError(null);
+    try {
+      const res = await fetch('/api/account', { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      await sb.auth.signOut();
+      router.push('/auth/login');
+    } catch (e) {
+      setDeleteAccountError(String(e));
+      setDeletingAccount(false);
+    }
   }
 
   return (
@@ -48,8 +65,43 @@ export default function HomePage() {
           <button onClick={signOut} className="text-[12px] text-slate-500 hover:text-slate-800 transition-colors">
             {tx.signOut}
           </button>
+          <button onClick={() => setShowDeleteAccount(true)}
+            className="text-[12px] text-rose-400 hover:text-rose-600 transition-colors">
+            Delete account
+          </button>
         </div>
       </header>
+
+      {/* Delete account modal */}
+      {showDeleteAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+            <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center mx-auto mb-4">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" className="text-rose-500">
+                <path d="M11 7v5M11 15h.01M21 11a10 10 0 11-20 0 10 10 0 0120 0z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <h2 className="text-[16px] font-semibold text-slate-900 text-center mb-1">Delete your account?</h2>
+            <p className="text-[13px] text-slate-500 text-center mb-5">
+              This permanently deletes your account and removes you from all organizations. This cannot be undone.
+            </p>
+            {deleteAccountError && (
+              <p className="text-[12px] text-rose-500 text-center mb-3">{deleteAccountError}</p>
+            )}
+            <div className="flex gap-2">
+              <button onClick={() => { setShowDeleteAccount(false); setDeleteAccountError(null); }}
+                disabled={deletingAccount}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-50">
+                Cancel
+              </button>
+              <button onClick={deleteAccount} disabled={deletingAccount}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-white bg-rose-500 hover:bg-rose-600 transition-colors disabled:opacity-50">
+                {deletingAccount ? 'Deleting…' : 'Yes, delete it'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-6xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-8">
