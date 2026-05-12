@@ -8,11 +8,14 @@ import type { StoredProject, ProjectSection } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const projects = listProjects();
+    const orgId = request.nextUrl.searchParams.get('org');
+    let projects = listProjects();
+    if (orgId) projects = projects.filter(p => p.orgId === orgId);
     const items = projects.map(p => ({
       id: p.id,
+      orgId: p.orgId,
       name: p.name,
       originalFilename: p.originalFilename,
       createdAt: p.createdAt,
@@ -36,6 +39,7 @@ export async function POST(request: NextRequest) {
     if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     if (selectedSheets.length === 0) return NextResponse.json({ error: 'No sheets selected' }, { status: 400 });
 
+    const orgId = (formData.get('orgId') as string | null)?.trim() || undefined;
     const buffer = Buffer.from(await file.arrayBuffer());
     const projectId = uuidv4();
 
@@ -56,6 +60,7 @@ export async function POST(request: NextRequest) {
 
     const project: StoredProject = {
       id: projectId,
+      orgId,
       name,
       originalFilename: file.name,
       createdAt: new Date().toISOString(),

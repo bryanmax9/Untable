@@ -18,11 +18,12 @@ function slugify(header: string): string {
 
 function detectLanguage(headers: string[], samples: string[]): 'es' | 'en' | 'pt' {
   const text = [...headers, ...samples].join(' ').toLowerCase();
-  const es = ['cliente', 'estado', 'fecha', 'responsable', 'prioridad', 'ingresos', 'gastos', 'precio'].filter(w => text.includes(w)).length;
-  const en = ['client', 'status', 'date', 'owner', 'priority', 'revenue', 'expense', 'price'].filter(w => text.includes(w)).length;
-  const pt = ['cliente', 'data', 'respons', 'prioridade', 'receita', 'despesas'].filter(w => text.includes(w)).length;
-  if (es >= en && es >= pt) return 'es';
-  if (pt > en) return 'pt';
+  const es = ['cliente', 'estado', 'fecha', 'responsable', 'prioridad', 'ingresos', 'gastos', 'precio', 'carpeta', 'expediente', 'empresa', 'gestión'].filter(w => text.includes(w)).length;
+  const en = ['client', 'status', 'date', 'owner', 'priority', 'revenue', 'expense', 'price', 'budget', 'amount', 'estimated', 'total', 'grant', 'disbursement', 'investment', 'withholding'].filter(w => text.includes(w)).length;
+  const pt = ['cliente', 'data', 'respons', 'prioridade', 'receita', 'despesas', 'empresa'].filter(w => text.includes(w)).length;
+  // Only classify as Spanish/Portuguese if there's actual evidence; default to English
+  if (es > 0 && es > en && es >= pt) return 'es';
+  if (pt > 0 && pt > en) return 'pt';
   return 'en';
 }
 
@@ -35,11 +36,11 @@ function detectStructure(
   const h = colLabels.map(s => s.toLowerCase());
   const colCount = colLabels.length;
 
-  // Budget: has an amount/cost column AND a % column
-  if (
-    h.some(x => /\bamount\b|cost|\$|budget|monto|\bprecio\b/i.test(x)) &&
-    h.some(x => /%|percent|porcentaje/i.test(x))
-  ) return 'budget';
+  // Budget: has a cost/amount column + (has description/items col OR small column count)
+  // The % column is optional — grant budgets, use-of-funds sheets, etc. rarely have %
+  const hasCostCol = h.some(x => /\bamount\b|\bcost\b|\$|budget|monto|\bprecio\b|\bprice\b/i.test(x));
+  const hasItemsCol = h.some(x => /item|service|descripci|description|category|purpose|concept|concepto/i.test(x));
+  if (hasCostCol && (hasItemsCol || colCount <= 5)) return 'budget';
 
   // Financial report OR timeseries: columns 1+ are year/period-based
   // Use strict pattern so "cumul." doesn't trigger it
@@ -90,10 +91,34 @@ interface HeaderResult {
   dataStart: number; // first row index of actual data
 }
 
+function looksLikeDataValue(s: string): boolean {
+  // Currency string like $5,000.00 or -$1,200
+  if (/^-?\$[\d,]+(\.\d+)?$/.test(s.trim())) return true;
+  // Pure numeric string with commas (1,200.00)
+  if (/^-?[\d]{1,3}(,\d{3})*(\.\d+)?$/.test(s.trim()) && s.includes(',')) return true;
+  // Percentage
+  if (/^-?\d+(\.\d+)?%$/.test(s.trim())) return true;
+  return false;
+}
+
+function scoreHeaderCandidate(nonEmpty: string[]): number {
+  // Prefer rows whose cells look like typical column names
+  let score = 0;
+  for (const s of nonEmpty) {
+    if (looksLikeDataValue(s)) score -= 5;
+    if (s.length <= 30 && /^[A-Za-z#]/.test(s)) score += 1;
+    if (/^(#|n[°o]|item|name|date|status|cost|amount|description|service|category|type|priority|area|client|id)/i.test(s)) score += 3;
+  }
+  return score;
+}
+
 function findHeaderRow(raw: unknown[][]): HeaderResult {
   const maxSearch = Math.min(15, raw.length);
 
   // Pass 1: row where ALL non-null cells are strings → definite header
+  // Collect all candidates then pick the best-scoring one (avoids picking data rows that happen to be all-strings)
+  const candidates: { i: number; score: number; source: (string | null)[] }[] = [];
+
   for (let i = 0; i < maxSearch; i++) {
     const row = raw[i] as unknown[];
     const nonEmpty = row.filter(c => c != null && c !== '');
@@ -103,12 +128,20 @@ function findHeaderRow(raw: unknown[][]): HeaderResult {
     const hasNextData = raw.slice(i + 1, i + 5).some(r =>
       (r as unknown[]).some(c => c != null && c !== '')
     );
-    if (hasNextData) {
-      const source = row.map(h =>
-        h != null && String(h).trim() !== '' ? String(h).replace(/\n/g, ' ').trim() : null
-      );
-      return { idx: i, source, dataStart: i + 1 };
-    }
+    if (!hasNextData) continue;
+    const strVals = nonEmpty.map(String);
+    const score = scoreHeaderCandidate(strVals);
+    const source = row.map(h =>
+      h != null && String(h).trim() !== '' ? String(h).replace(/\n/g, ' ').trim() : null
+    );
+    candidates.push({ i, score, source });
+  }
+
+  if (candidates.length > 0) {
+    // Prefer highest-scoring candidate; if scores tied prefer the earlier one unless a later one scores significantly better
+    candidates.sort((a, b) => b.score !== a.score ? b.score - a.score : a.i - b.i);
+    const best = candidates[0];
+    return { idx: best.i, source: best.source, dataStart: best.i + 1 };
   }
 
   // Pass 2: row where first col is null but rest are year/period strings
@@ -164,12 +197,29 @@ export function parseSheet(buffer: Buffer, sheetName: string): { schema: Schema;
   const ws = wb.Sheets[sheetName];
   if (!ws) throw new Error(`Sheet "${sheetName}" not found`);
 
+  // Pre-extract hyperlinks: map "R<row>C<col>" → URL
+  const hyperlinkMap = new Map<string, string>();
+  const range = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : null;
+  if (range) {
+    for (let r = range.s.r; r <= range.e.r; r++) {
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const addr = XLSX.utils.encode_cell({ r, c });
+        const cell = ws[addr];
+        if (cell?.l?.Target) hyperlinkMap.set(`${r},${c}`, cell.l.Target);
+      }
+    }
+  }
+
   const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
   const { source: headerSource, dataStart } = findHeaderRow(raw);
 
-  const dataRows = raw.slice(dataStart).filter(r =>
-    r && (r as unknown[]).some(c => c != null && c !== '')
-  );
+  // Keep track of original row indices for hyperlink lookups
+  const dataRowsWithIdx: { row: unknown[]; rawIdx: number }[] = raw
+    .map((r, i) => ({ row: r as unknown[], rawIdx: i }))
+    .slice(dataStart)
+    .filter(({ row }) => row && row.some(c => c != null && c !== ''));
+
+  const dataRows = dataRowsWithIdx.map(({ row }) => row);
 
   // Determine actual column count from data
   const maxDataWidth = Math.max(
@@ -181,11 +231,10 @@ export function parseSheet(buffer: Buffer, sheetName: string): { schema: Schema;
   const colLabels: string[] = Array.from({ length: maxDataWidth }, (_, i) => {
     const h = headerSource[i];
     if (h != null && h.trim() !== '') return h.trim();
-    // For first column with null header: check if data rows have values there
     const hasData = dataRows.some(r => (r as unknown[])[i] != null && (r as unknown[])[i] !== '');
     if (i === 0 && hasData) return 'Item';
     if (hasData) return `Column ${i + 1}`;
-    return ''; // truly empty column — will be skipped
+    return '';
   });
 
   // Collect values per column for type inference
@@ -205,7 +254,7 @@ export function parseSheet(buffer: Buffer, sheetName: string): { schema: Schema;
 
   // Build columns (skip truly empty columns)
   const columns: Column[] = [];
-  const colIndexMap: number[] = []; // maps column array index → raw column index
+  const colIndexMap: number[] = [];
   const usedIds = new Set<string>();
 
   for (let i = 0; i < maxDataWidth; i++) {
@@ -228,14 +277,18 @@ export function parseSheet(buffer: Buffer, sheetName: string): { schema: Schema;
 
   const language = detectLanguage(columns.map(c => c.label), sampleStrings);
 
-  // Build row objects
-  const rows: Row[] = dataRows.map(rawRow => {
+  // Build row objects (use rawIdx to look up hyperlinks per cell)
+  const rows: Row[] = dataRowsWithIdx.map(({ row: rawRow, rawIdx: rowIdx }) => {
     const row: Row = { _id: uuidv4() };
     for (let ci = 0; ci < columns.length; ci++) {
-      const rawIdx = colIndexMap[ci];
+      const colIdx = colIndexMap[ci];
       const col = columns[ci];
-      let val: unknown = (rawRow as unknown[])[rawIdx] ?? null;
-      if (val instanceof Date) {
+      // Prefer hyperlink URL over cell text for url/link columns
+      const hyperlink = hyperlinkMap.get(`${rowIdx},${colIdx}`);
+      let val: unknown = (rawRow as unknown[])[colIdx] ?? null;
+      if (hyperlink && (col.semanticRole === 'link' || col.type === 'url')) {
+        val = hyperlink;
+      } else if (val instanceof Date) {
         val = val.toISOString().slice(0, 10);
       } else if (typeof val === 'string') {
         val = val.trim() || null;

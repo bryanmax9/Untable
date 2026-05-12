@@ -95,6 +95,7 @@ export interface ProjectSection {
 
 export interface StoredProject {
   id: string;
+  orgId?: string;
   name: string;
   originalFilename: string;
   createdAt: string;

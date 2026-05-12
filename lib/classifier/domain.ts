@@ -13,21 +13,20 @@ const FINGERPRINTS: DomainFingerprint[] = [
   {
     id: 'dev_sprint',
     required: ['cliente', 'responsable', 'estado'],
-    strong: ['carpeta', 'área', 'area', 'acción', 'accion', 'procedimiento', 'hechos',
-             'desarrollo', 'devops', 'engineering', 'sprint', 'ticket'],
+    strong: ['área', 'area', 'desarrollo', 'devops', 'engineering', 'sprint', 'ticket'],
     medium: ['asunto', 'prioridad', 'fecha límite', 'link', 'observaciones', 'responsable pm'],
     weak: ['horario', 'descripción'],
-    forbid: ['expediente', 'paciente', 'sku', 'inventario', 'lead', 'opportunity']
+    forbid: ['expediente', 'paciente', 'sku', 'inventario', 'lead', 'opportunity', 'hechos', 'procedimiento']
   },
   {
     id: 'legal_pendings',
-    required: ['expediente', 'caso', 'arbitraje', 'judicial', 'demanda', 'cliente'],
+    required: ['carpeta', 'hechos', 'procedimiento', 'cliente'],
     strong: ['expediente', 'arbitraje', 'demanda', 'audiencia', 'sentencia',
-             'fiscal', 'juzgado', 'sunafil', 'denuncia', 'carpeta'],
+             'fiscal', 'juzgado', 'sunafil', 'denuncia', 'carpeta', 'hechos', 'procedimiento'],
     medium: ['cliente', 'responsable', 'estado', 'plazo', 'fecha límite',
-             'procedimiento', 'hechos'],
-    weak: ['observaciones', 'prioridad'],
-    forbid: ['sku', 'inventario', 'invoice', 'paciente', 'área', 'area', 'devops']
+             'accion', 'acción', 'horario'],
+    weak: ['observaciones', 'prioridad', 'area', 'área'],
+    forbid: ['sku', 'inventario', 'invoice', 'paciente', 'devops', 'sprint', 'ticket']
   },
   {
     id: 'sales_pipeline',

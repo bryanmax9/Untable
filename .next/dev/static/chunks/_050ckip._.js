@@ -1179,6 +1179,18 @@ const ROLE_ORDER = [
 // ─── Status + priority colour helpers (match intra-app.html) ─────────────────
 function statusStyle(val) {
     const v = (val || '').toLowerCase();
+    if (/en progres/i.test(val)) return {
+        background: C.sky50,
+        color: C.sky800
+    };
+    if (/en proce/i.test(val)) return {
+        background: C.emerald50,
+        color: C.emerald800
+    };
+    if (/pendiente/i.test(val)) return {
+        background: C.amber50,
+        color: C.amber800
+    };
     if (/progres/.test(v)) return {
         background: C.sky50,
         color: C.sky800
@@ -1191,11 +1203,23 @@ function statusStyle(val) {
         background: C.amber50,
         color: C.amber800
     };
+    if (/^alta$/i.test(val.trim())) return {
+        background: C.violet50,
+        color: C.violet800
+    };
+    if (/alta|high/.test(v)) return {
+        background: C.amber50,
+        color: C.amber800
+    };
     if (/listo|done|complet|cerrad|closed/.test(v)) return {
         background: C.slate50,
         color: C.slate800
     };
     if (/cancel|rechaz/.test(v)) return {
+        background: C.rose50,
+        color: C.rose800
+    };
+    if (/urgent/.test(v)) return {
         background: C.rose50,
         color: C.rose800
     };
@@ -1253,7 +1277,7 @@ function Av({ name, size = 32 }) {
         children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["initials"])(name || '?')
     }, void 0, false, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 185,
+        lineNumber: 191,
         columnNumber: 5
     }, this);
 }
@@ -1271,7 +1295,7 @@ function StatusBadge({ val, col }) {
         children: val
     }, void 0, false, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 196,
+        lineNumber: 202,
         columnNumber: 5
     }, this);
 }
@@ -1295,7 +1319,7 @@ function KpiCard({ label, value, sub, accent, onClick }) {
                 children: label
             }, void 0, false, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 212,
+                lineNumber: 218,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1306,7 +1330,7 @@ function KpiCard({ label, value, sub, accent, onClick }) {
                 children: value
             }, void 0, false, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 213,
+                lineNumber: 219,
                 columnNumber: 7
             }, this),
             sub && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1317,13 +1341,13 @@ function KpiCard({ label, value, sub, accent, onClick }) {
                 children: sub
             }, void 0, false, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 214,
+                lineNumber: 220,
                 columnNumber: 15
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 207,
+        lineNumber: 213,
         columnNumber: 5
     }, this);
 }
@@ -1358,13 +1382,13 @@ function FieldInput({ col, value, onChange }) {
                     children: opt
                 }, opt, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 232,
+                    lineNumber: 238,
                     columnNumber: 13
                 }, this);
             })
         }, void 0, false, {
             fileName: "[project]/components/ProjectApp.tsx",
-            lineNumber: 227,
+            lineNumber: 233,
             columnNumber: 7
         }, this);
     }
@@ -1376,7 +1400,7 @@ function FieldInput({ col, value, onChange }) {
         style: inputStyle
     }, void 0, false, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 243,
+        lineNumber: 249,
         columnNumber: 5
     }, this);
     if (col.type === 'longtext') return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("textarea", {
@@ -1388,7 +1412,7 @@ function FieldInput({ col, value, onChange }) {
         placeholder: "…"
     }, void 0, false, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 247,
+        lineNumber: 253,
         columnNumber: 5
     }, this);
     if (col.type === 'url') return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1400,7 +1424,7 @@ function FieldInput({ col, value, onChange }) {
         style: inputStyle
     }, void 0, false, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 252,
+        lineNumber: 258,
         columnNumber: 5
     }, this);
     if (col.type === 'number' || col.type === 'currency') return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1411,7 +1435,7 @@ function FieldInput({ col, value, onChange }) {
         style: inputStyle
     }, void 0, false, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 256,
+        lineNumber: 262,
         columnNumber: 5
     }, this);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1422,7 +1446,7 @@ function FieldInput({ col, value, onChange }) {
         style: inputStyle
     }, void 0, false, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 260,
+        lineNumber: 266,
         columnNumber: 5
     }, this);
 }
@@ -1480,7 +1504,7 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
             children: col.label
         }, void 0, false, {
             fileName: "[project]/components/ProjectApp.tsx",
-            lineNumber: 299,
+            lineNumber: 305,
             columnNumber: 5
         }, this);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1512,7 +1536,7 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                                     children: title
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 313,
+                                    lineNumber: 319,
                                     columnNumber: 13
                                 }, this),
                                 skip.size > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1529,13 +1553,13 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 315,
+                                    lineNumber: 321,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 312,
+                            lineNumber: 318,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1558,23 +1582,23 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                                     strokeLinecap: "round"
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 325,
+                                    lineNumber: 331,
                                     columnNumber: 73
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 325,
+                                lineNumber: 331,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 320,
+                            lineNumber: 326,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 311,
+                    lineNumber: 317,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -1587,7 +1611,7 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                                         col: col
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 333,
+                                        lineNumber: 339,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(FieldInput, {
@@ -1596,13 +1620,13 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                                         onChange: (v)=>set(col.id, v)
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 334,
+                                        lineNumber: 340,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, col.id, true, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 332,
+                                lineNumber: 338,
                                 columnNumber: 13
                             }, this)),
                         extra.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1629,19 +1653,19 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                                                 strokeLinejoin: "round"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 346,
+                                                lineNumber: 352,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 344,
+                                            lineNumber: 350,
                                             columnNumber: 17
                                         }, this),
                                         showExtra ? tx.extra : `${tx.extra} (${extra.length})`
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 341,
+                                    lineNumber: 347,
                                     columnNumber: 15
                                 }, this),
                                 showExtra && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1655,7 +1679,7 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                                                     col: col
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/ProjectApp.tsx",
-                                                    lineNumber: 354,
+                                                    lineNumber: 360,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(FieldInput, {
@@ -1664,24 +1688,24 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                                                     onChange: (v)=>set(col.id, v)
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/ProjectApp.tsx",
-                                                    lineNumber: 355,
+                                                    lineNumber: 361,
                                                     columnNumber: 23
                                                 }, this)
                                             ]
                                         }, col.id, true, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 353,
+                                            lineNumber: 359,
                                             columnNumber: 21
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 351,
+                                    lineNumber: 357,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 340,
+                            lineNumber: 346,
                             columnNumber: 13
                         }, this),
                         notes.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -1694,7 +1718,7 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                                     children: tx.notes
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 366,
+                                    lineNumber: 372,
                                     columnNumber: 15
                                 }, this),
                                 notes.map((col)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1703,7 +1727,7 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                                                 col: col
                                             }, void 0, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 369,
+                                                lineNumber: 375,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(FieldInput, {
@@ -1712,13 +1736,13 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                                                 onChange: (v)=>set(col.id, v)
                                             }, void 0, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 370,
+                                                lineNumber: 376,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, col.id, true, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 368,
+                                        lineNumber: 374,
                                         columnNumber: 17
                                     }, this))
                             ]
@@ -1732,13 +1756,13 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                             children: error
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 376,
+                            lineNumber: 382,
                             columnNumber: 21
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 329,
+                    lineNumber: 335,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1767,7 +1791,7 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                             children: tx.delete
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 381,
+                            lineNumber: 387,
                             columnNumber: 13
                         }, this),
                         !onDelete && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
@@ -1796,31 +1820,31 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                                             strokeLinecap: "round"
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 392,
+                                            lineNumber: 398,
                                             columnNumber: 83
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 392,
+                                        lineNumber: 398,
                                         columnNumber: 27
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 389,
+                                    lineNumber: 395,
                                     columnNumber: 15
                                 }, this),
                                 tx.addAnother
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 388,
+                            lineNumber: 394,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "flex-1"
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 397,
+                            lineNumber: 403,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1836,7 +1860,7 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                             children: tx.cancel
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 398,
+                            lineNumber: 404,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1850,24 +1874,24 @@ function RowModal({ title, columns, initial, rows, onSubmit, onClose, onDelete, 
                             children: saving ? '…' : tx.save
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 404,
+                            lineNumber: 410,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 379,
+                    lineNumber: 385,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/ProjectApp.tsx",
-            lineNumber: 307,
+            lineNumber: 313,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 305,
+        lineNumber: 311,
         columnNumber: 5
     }, this);
 }
@@ -1958,19 +1982,19 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                             strokeLinejoin: "round"
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 475,
+                            lineNumber: 481,
                             columnNumber: 69
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 475,
+                        lineNumber: 481,
                         columnNumber: 9
                     }, this),
                     "Back"
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 471,
+                lineNumber: 477,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1992,7 +2016,7 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                 children: clientVal
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 484,
+                                lineNumber: 490,
                                 columnNumber: 13
                             }, this),
                             areaVal && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2004,7 +2028,7 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                 children: areaVal
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 487,
+                                lineNumber: 493,
                                 columnNumber: 13
                             }, this),
                             statusVal && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatusBadge, {
@@ -2012,7 +2036,7 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                 col: statusCol
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 489,
+                                lineNumber: 495,
                                 columnNumber: 25
                             }, this),
                             priorityVal && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatusBadge, {
@@ -2020,13 +2044,13 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                 col: priorityCol
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 490,
+                                lineNumber: 496,
                                 columnNumber: 27
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 482,
+                        lineNumber: 488,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2037,7 +2061,7 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                         children: title || '—'
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 493,
+                        lineNumber: 499,
                         columnNumber: 9
                     }, this),
                     idVal && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2052,7 +2076,7 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 495,
+                        lineNumber: 501,
                         columnNumber: 11
                     }, this),
                     infoGridCols.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2078,7 +2102,7 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                         children: col.label
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 507,
+                                        lineNumber: 513,
                                         columnNumber: 19
                                     }, this),
                                     col.semanticRole === 'assignee' && val ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2095,7 +2119,7 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                                 children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["initials"])(val)
                                             }, void 0, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 510,
+                                                lineNumber: 516,
                                                 columnNumber: 23
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2106,20 +2130,20 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                                 children: val
                                             }, void 0, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 511,
+                                                lineNumber: 517,
                                                 columnNumber: 23
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 509,
+                                        lineNumber: 515,
                                         columnNumber: 21
                                     }, this) : col.type === 'enum' ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatusBadge, {
                                         val: val,
                                         col: col
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 514,
+                                        lineNumber: 520,
                                         columnNumber: 21
                                     }, this) : col.type === 'date' ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         className: "text-[13px] font-medium",
@@ -2129,7 +2153,7 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                         children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["fmtDate"])(val) || '—'
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 516,
+                                        lineNumber: 522,
                                         columnNumber: 21
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         className: "text-[13px] font-medium",
@@ -2139,25 +2163,25 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                         children: val || '—'
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 518,
+                                        lineNumber: 524,
                                         columnNumber: 21
                                     }, this)
                                 ]
                             }, col.id, true, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 506,
+                                lineNumber: 512,
                                 columnNumber: 17
                             }, this);
                         })
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 502,
+                        lineNumber: 508,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 480,
+                lineNumber: 486,
                 columnNumber: 7
             }, this),
             contentCols.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2184,7 +2208,7 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                 children: col.label
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 540,
+                                lineNumber: 546,
                                 columnNumber: 17
                             }, this),
                             isSteps ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2206,7 +2230,7 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                                 children: i + 1
                                             }, void 0, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 545,
+                                                lineNumber: 551,
                                                 columnNumber: 25
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2217,18 +2241,18 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                                 children: s.replace(/^\d+\.\s*/, '')
                                             }, void 0, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 547,
+                                                lineNumber: 553,
                                                 columnNumber: 25
                                             }, this)
                                         ]
                                     }, i, true, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 544,
+                                        lineNumber: 550,
                                         columnNumber: 23
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 542,
+                                lineNumber: 548,
                                 columnNumber: 19
                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "rounded-lg px-4 py-3 text-[13px] leading-relaxed whitespace-pre-wrap",
@@ -2242,19 +2266,19 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                 children: val || `—`
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 552,
+                                lineNumber: 558,
                                 columnNumber: 19
                             }, this)
                         ]
                     }, col.id, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 539,
+                        lineNumber: 545,
                         columnNumber: 15
                     }, this);
                 })
             }, void 0, false, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 529,
+                lineNumber: 535,
                 columnNumber: 9
             }, this),
             (urlCols.length > 0 || g(row, bindings.notes)) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2262,6 +2286,8 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                 children: [
                     urlCols.map((col)=>{
                         const href = g(row, col.id);
+                        const isDrive = href && /drive\.google\.com|docs\.google\.com|meet\.google\.com/i.test(href);
+                        const isMeet = href && /meet\.google\.com/i.test(href);
                         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "rounded-xl p-4",
                             style: {
@@ -2277,21 +2303,64 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                     children: col.label
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 570,
+                                    lineNumber: 578,
                                     columnNumber: 17
                                 }, this),
-                                href ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                    href: href,
-                                    target: "_blank",
-                                    rel: "noopener noreferrer",
-                                    className: "text-[13px] break-all hover:underline",
-                                    style: {
-                                        color: C.indigo600
-                                    },
-                                    children: href
+                                href ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "flex items-center gap-2 flex-wrap",
+                                    children: isDrive ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+                                        href: href,
+                                        target: "_blank",
+                                        rel: "noopener noreferrer",
+                                        className: "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white transition-opacity hover:opacity-90",
+                                        style: {
+                                            background: isMeet ? C.emerald600 : C.indigo600
+                                        },
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
+                                                width: "12",
+                                                height: "12",
+                                                viewBox: "0 0 12 12",
+                                                fill: "none",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
+                                                    d: "M6 1v6M3 4l3-3 3 3M2 9h8a1 1 0 011 1v.5a.5.5 0 01-.5.5h-9A.5.5 0 011 10.5V10a1 1 0 011-1z",
+                                                    stroke: "currentColor",
+                                                    strokeWidth: "1.2",
+                                                    strokeLinecap: "round",
+                                                    strokeLinejoin: "round"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/components/ProjectApp.tsx",
+                                                    lineNumber: 585,
+                                                    columnNumber: 85
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/components/ProjectApp.tsx",
+                                                lineNumber: 585,
+                                                columnNumber: 25
+                                            }, this),
+                                            isMeet ? 'Unirse a reunión' : 'Abrir en Drive'
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/components/ProjectApp.tsx",
+                                        lineNumber: 582,
+                                        columnNumber: 23
+                                    }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+                                        href: href,
+                                        target: "_blank",
+                                        rel: "noopener noreferrer",
+                                        className: "text-[13px] break-all hover:underline",
+                                        style: {
+                                            color: C.indigo600
+                                        },
+                                        children: href
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/ProjectApp.tsx",
+                                        lineNumber: 589,
+                                        columnNumber: 23
+                                    }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 572,
+                                    lineNumber: 580,
                                     columnNumber: 19
                                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                     style: {
@@ -2301,13 +2370,13 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                     children: "—"
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 574,
+                                    lineNumber: 593,
                                     columnNumber: 21
                                 }, this)
                             ]
                         }, col.id, true, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 569,
+                            lineNumber: 577,
                             columnNumber: 15
                         }, this);
                     }),
@@ -2326,7 +2395,7 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                 children: cols.find((c)=>c.id === bindings.notes)?.label ?? 'Notes'
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 580,
+                                lineNumber: 599,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2337,19 +2406,19 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                                 children: g(row, bindings.notes)
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 581,
+                                lineNumber: 600,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 579,
+                        lineNumber: 598,
                         columnNumber: 13
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 565,
+                lineNumber: 571,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2373,7 +2442,7 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                         children: tx.delete
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 589,
+                        lineNumber: 608,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2386,13 +2455,13 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                         children: tx.edit
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 594,
+                        lineNumber: 613,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 588,
+                lineNumber: 607,
                 columnNumber: 7
             }, this),
             editing && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(RowModal, {
@@ -2406,13 +2475,13 @@ function DetailView({ row, section, projectId, sectionIdx, allRows, onBack, onUp
                 tx: tx
             }, void 0, false, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 602,
+                lineNumber: 621,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 469,
+        lineNumber: 475,
         columnNumber: 5
     }, this);
 }
@@ -2477,7 +2546,7 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                         sub: section.sheetName
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 653,
+                        lineNumber: 672,
                         columnNumber: 9
                     }, this),
                     overdue > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KpiCard, {
@@ -2488,7 +2557,7 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                         sub: "Acción inmediata"
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 654,
+                        lineNumber: 673,
                         columnNumber: 25
                     }, this),
                     urgent > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KpiCard, {
@@ -2499,7 +2568,7 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                         sub: `De ${total} total`
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 655,
+                        lineNumber: 674,
                         columnNumber: 24
                     }, this),
                     week > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(KpiCard, {
@@ -2508,13 +2577,13 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                         onClick: onGoPlazos
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 656,
+                        lineNumber: 675,
                         columnNumber: 22
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 652,
+                lineNumber: 671,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2535,7 +2604,7 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                 children: bkCol.label
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 663,
+                                lineNumber: 682,
                                 columnNumber: 13
                             }, this),
                             bkSorted.slice(0, 8).map(([label, count])=>{
@@ -2551,7 +2620,7 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                             children: label
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 668,
+                                            lineNumber: 687,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2567,12 +2636,12 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                                 }
                                             }, void 0, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 670,
+                                                lineNumber: 689,
                                                 columnNumber: 21
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 669,
+                                            lineNumber: 688,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2583,20 +2652,20 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                             children: count
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 672,
+                                            lineNumber: 691,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, label, true, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 667,
+                                    lineNumber: 686,
                                     columnNumber: 17
                                 }, this);
                             })
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 662,
+                        lineNumber: 681,
                         columnNumber: 11
                     }, this),
                     upcoming.length > 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2617,7 +2686,7 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                         children: tx.upcoming
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 683,
+                                        lineNumber: 702,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2632,13 +2701,13 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                         children: "Ver todos →"
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 684,
+                                        lineNumber: 703,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 682,
+                                lineNumber: 701,
                                 columnNumber: 13
                             }, this),
                             upcoming.map(({ r, d }, i)=>{
@@ -2662,7 +2731,7 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                             }
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 697,
+                                            lineNumber: 716,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2676,7 +2745,7 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                                     children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["truncate"])(g(r, titleId), 50)
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/ProjectApp.tsx",
-                                                    lineNumber: 699,
+                                                    lineNumber: 718,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2691,13 +2760,13 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/ProjectApp.tsx",
-                                                    lineNumber: 700,
+                                                    lineNumber: 719,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 698,
+                                            lineNumber: 717,
                                             columnNumber: 19
                                         }, this),
                                         sVal && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatusBadge, {
@@ -2705,7 +2774,7 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                             col: statusCol
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 702,
+                                            lineNumber: 721,
                                             columnNumber: 28
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2716,20 +2785,20 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                             children: dLabel
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 703,
+                                            lineNumber: 722,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, i, true, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 692,
+                                    lineNumber: 711,
                                     columnNumber: 17
                                 }, this);
                             })
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 681,
+                        lineNumber: 700,
                         columnNumber: 11
                     }, this) : /* Recent rows (fallback when no deadline col) */ /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "rounded-xl p-5",
@@ -2746,7 +2815,7 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                 children: tx.recientes
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 711,
+                                lineNumber: 730,
                                 columnNumber: 13
                             }, this),
                             recent.map((r, i)=>{
@@ -2766,7 +2835,7 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                             size: 26
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 720,
+                                            lineNumber: 739,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2780,7 +2849,7 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                                     children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["truncate"])(t, 40)
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/ProjectApp.tsx",
-                                                    lineNumber: 722,
+                                                    lineNumber: 741,
                                                     columnNumber: 21
                                                 }, this),
                                                 sub && sub !== t && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2791,13 +2860,13 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                                     children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["truncate"])(sub, 30)
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/ProjectApp.tsx",
-                                                    lineNumber: 723,
+                                                    lineNumber: 742,
                                                     columnNumber: 42
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 721,
+                                            lineNumber: 740,
                                             columnNumber: 19
                                         }, this),
                                         sVal && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatusBadge, {
@@ -2805,13 +2874,13 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                             col: statusCol
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 725,
+                                            lineNumber: 744,
                                             columnNumber: 28
                                         }, this)
                                     ]
                                 }, i, true, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 716,
+                                    lineNumber: 735,
                                     columnNumber: 17
                                 }, this);
                             }),
@@ -2823,19 +2892,19 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                 children: tx.noRows
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 729,
+                                lineNumber: 748,
                                 columnNumber: 37
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 710,
+                        lineNumber: 729,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 659,
+                lineNumber: 678,
                 columnNumber: 7
             }, this),
             grpSorted.length > 0 && grpCol && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2857,7 +2926,7 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 737,
+                        lineNumber: 756,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2873,7 +2942,7 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                         children: label
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 741,
+                                        lineNumber: 760,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2889,12 +2958,12 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                             }
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 743,
+                                            lineNumber: 762,
                                             columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 742,
+                                        lineNumber: 761,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2905,30 +2974,30 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }) {
                                         children: count
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 745,
+                                        lineNumber: 764,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, label, true, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 740,
+                                lineNumber: 759,
                                 columnNumber: 15
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 738,
+                        lineNumber: 757,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 736,
+                lineNumber: 755,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 650,
+        lineNumber: 669,
         columnNumber: 5
     }, this);
 }
@@ -2965,7 +3034,7 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
             children: "—"
         }, void 0, false, {
             fileName: "[project]/components/ProjectApp.tsx",
-            lineNumber: 778,
+            lineNumber: 797,
             columnNumber: 43
         }, this);
         const s = String(raw);
@@ -2974,7 +3043,7 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
             col: col
         }, void 0, false, {
             fileName: "[project]/components/ProjectApp.tsx",
-            lineNumber: 780,
+            lineNumber: 799,
             columnNumber: 37
         }, this);
         if (col.type === 'date') return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2986,7 +3055,7 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
             children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["fmtDate"])(s)
         }, void 0, false, {
             fileName: "[project]/components/ProjectApp.tsx",
-            lineNumber: 781,
+            lineNumber: 800,
             columnNumber: 37
         }, this);
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2997,7 +3066,7 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
             children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["truncate"])(s, 40)
         }, void 0, false, {
             fileName: "[project]/components/ProjectApp.tsx",
-            lineNumber: 782,
+            lineNumber: 801,
             columnNumber: 12
         }, this);
     }
@@ -3035,7 +3104,7 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 797,
+                                            lineNumber: 816,
                                             columnNumber: 15
                                         }, this),
                                         col.options?.map((o)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -3043,13 +3112,13 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                                                 children: o
                                             }, o, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 798,
+                                                lineNumber: 817,
                                                 columnNumber: 38
                                             }, this))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 794,
+                                    lineNumber: 813,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
@@ -3068,18 +3137,18 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                                         strokeLinecap: "round"
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 801,
+                                        lineNumber: 820,
                                         columnNumber: 15
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 800,
+                                    lineNumber: 819,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, col.id, true, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 793,
+                            lineNumber: 812,
                             columnNumber: 11
                         }, this)),
                     Object.values(filters).some(Boolean) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3097,14 +3166,14 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 806,
+                        lineNumber: 825,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "flex-1"
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 810,
+                        lineNumber: 829,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3119,7 +3188,7 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 811,
+                        lineNumber: 830,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3142,25 +3211,25 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                                     strokeLinecap: "round"
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 815,
+                                    lineNumber: 834,
                                     columnNumber: 71
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 815,
+                                lineNumber: 834,
                                 columnNumber: 11
                             }, this),
                             tx.add
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 812,
+                        lineNumber: 831,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 791,
+                lineNumber: 810,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3192,17 +3261,17 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                                     d: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 826,
+                                    lineNumber: 845,
                                     columnNumber: 17
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 825,
+                                lineNumber: 844,
                                 columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 824,
+                            lineNumber: 843,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3215,7 +3284,7 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                                     children: "No rows yet"
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 830,
+                                    lineNumber: 849,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3226,13 +3295,13 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                                     children: tx.noRows
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 831,
+                                    lineNumber: 850,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 829,
+                            lineNumber: 848,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3244,13 +3313,13 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                             children: tx.add
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 833,
+                            lineNumber: 852,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 823,
+                    lineNumber: 842,
                     columnNumber: 11
                 }, this) : displayed.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "py-14 text-center text-[13px]",
@@ -3260,7 +3329,7 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                     children: tx.noResults
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 836,
+                    lineNumber: 855,
                     columnNumber: 11
                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "overflow-x-auto",
@@ -3287,7 +3356,7 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                                                 children: col.label
                                             }, col.id, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 843,
+                                                lineNumber: 862,
                                                 columnNumber: 21
                                             }, this)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -3296,18 +3365,18 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                                             }
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 847,
+                                            lineNumber: 866,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 841,
+                                    lineNumber: 860,
                                     columnNumber: 17
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 840,
+                                lineNumber: 859,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -3333,7 +3402,7 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                                                                 size: 22
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                                lineNumber: 860,
+                                                                lineNumber: 879,
                                                                 columnNumber: 29
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3347,18 +3416,18 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                                                                 children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["truncate"])(g(row, clientId), 28)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                                lineNumber: 861,
+                                                                lineNumber: 880,
                                                                 columnNumber: 29
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/ProjectApp.tsx",
-                                                        lineNumber: 859,
+                                                        lineNumber: 878,
                                                         columnNumber: 27
                                                     }, this) : cellNode(col, row[col.id])
                                                 }, col.id, false, {
                                                     fileName: "[project]/components/ProjectApp.tsx",
-                                                    lineNumber: 857,
+                                                    lineNumber: 876,
                                                     columnNumber: 23
                                                 }, this)),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -3370,34 +3439,34 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                                                 children: "›"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 866,
+                                                lineNumber: 885,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, row._id ?? i, true, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 852,
+                                        lineNumber: 871,
                                         columnNumber: 19
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 850,
+                                lineNumber: 869,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 839,
+                        lineNumber: 858,
                         columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 838,
+                    lineNumber: 857,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 821,
+                lineNumber: 840,
                 columnNumber: 7
             }, this),
             addOpen && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(RowModal, {
@@ -3425,13 +3494,13 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
                 tx: tx
             }, void 0, false, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 876,
+                lineNumber: 895,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 789,
+        lineNumber: 808,
         columnNumber: 5
     }, this);
 }
@@ -3453,7 +3522,7 @@ function PlazosView({ section, onViewRow, tx }) {
         children: tx.noDeadlines
     }, void 0, false, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 899,
+        lineNumber: 918,
         columnNumber: 5
     }, this);
     const buckets = {
@@ -3505,7 +3574,7 @@ function PlazosView({ section, onViewRow, tx }) {
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 926,
+                            lineNumber: 945,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3534,7 +3603,7 @@ function PlazosView({ section, onViewRow, tx }) {
                                             }
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 940,
+                                            lineNumber: 959,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3548,7 +3617,7 @@ function PlazosView({ section, onViewRow, tx }) {
                                                     children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["truncate"])(g(r, titleId), 80)
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/ProjectApp.tsx",
-                                                    lineNumber: 942,
+                                                    lineNumber: 961,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3565,13 +3634,13 @@ function PlazosView({ section, onViewRow, tx }) {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/ProjectApp.tsx",
-                                                    lineNumber: 943,
+                                                    lineNumber: 962,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 941,
+                                            lineNumber: 960,
                                             columnNumber: 19
                                         }, this),
                                         sVal && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatusBadge, {
@@ -3579,7 +3648,7 @@ function PlazosView({ section, onViewRow, tx }) {
                                             col: statusCol
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 947,
+                                            lineNumber: 966,
                                             columnNumber: 28
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3590,25 +3659,25 @@ function PlazosView({ section, onViewRow, tx }) {
                                             children: dLabel
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 948,
+                                            lineNumber: 967,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, i, true, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 935,
+                                    lineNumber: 954,
                                     columnNumber: 17
                                 }, this);
                             })
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 929,
+                            lineNumber: 948,
                             columnNumber: 11
                         }, this)
                     ]
                 }, name, true, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 925,
+                    lineNumber: 944,
                     columnNumber: 9
                 }, this)),
             Object.values(buckets).every((b)=>b.rows.length === 0) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3621,13 +3690,13 @@ function PlazosView({ section, onViewRow, tx }) {
                 children: tx.noDeadlines
             }, void 0, false, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 956,
+                lineNumber: 975,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 923,
+        lineNumber: 942,
         columnNumber: 5
     }, this);
 }
@@ -3646,7 +3715,7 @@ function EquipoView({ section, tx }) {
         children: tx.noTeam
     }, void 0, false, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 967,
+        lineNumber: 986,
         columnNumber: 5
     }, this);
     const byPerson = {};
@@ -3695,17 +3764,17 @@ function EquipoView({ section, tx }) {
                                 children: h
                             }, h, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 986,
+                                lineNumber: 1005,
                                 columnNumber: 15
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 984,
+                        lineNumber: 1003,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 983,
+                    lineNumber: 1002,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -3724,7 +3793,7 @@ function EquipoView({ section, tx }) {
                                                 size: 28
                                             }, void 0, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 995,
+                                                lineNumber: 1014,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3736,18 +3805,18 @@ function EquipoView({ section, tx }) {
                                                 children: name
                                             }, void 0, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 996,
+                                                lineNumber: 1015,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 994,
+                                        lineNumber: 1013,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 993,
+                                    lineNumber: 1012,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -3760,7 +3829,7 @@ function EquipoView({ section, tx }) {
                                     children: s.rows.length
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 999,
+                                    lineNumber: 1018,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -3774,7 +3843,7 @@ function EquipoView({ section, tx }) {
                                         children: s.urgent
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 1002,
+                                        lineNumber: 1021,
                                         columnNumber: 21
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         style: {
@@ -3783,12 +3852,12 @@ function EquipoView({ section, tx }) {
                                         children: "—"
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 1003,
+                                        lineNumber: 1022,
                                         columnNumber: 21
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 1000,
+                                    lineNumber: 1019,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -3808,39 +3877,39 @@ function EquipoView({ section, tx }) {
                                                 ]
                                             }, a, true, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 1008,
+                                                lineNumber: 1027,
                                                 columnNumber: 21
                                             }, this))
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 1006,
+                                        lineNumber: 1025,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 1005,
+                                    lineNumber: 1024,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, name, true, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 992,
+                            lineNumber: 1011,
                             columnNumber: 13
                         }, this))
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 990,
+                    lineNumber: 1009,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/ProjectApp.tsx",
-            lineNumber: 982,
+            lineNumber: 1001,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 981,
+        lineNumber: 1000,
         columnNumber: 5
     }, this);
 }
@@ -3864,7 +3933,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                     onEditRow: setEditRow
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1032,
+                    lineNumber: 1051,
                     columnNumber: 9
                 }, this),
                 editRow && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(RowModal, {
@@ -3891,13 +3960,13 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                     tx: tx
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1034,
+                    lineNumber: 1053,
                     columnNumber: 11
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/ProjectApp.tsx",
-            lineNumber: 1031,
+            lineNumber: 1050,
             columnNumber: 7
         }, this);
     }
@@ -3916,25 +3985,25 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                         children: "Read-only report"
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1055,
+                        lineNumber: 1074,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1054,
+                    lineNumber: 1073,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$StructuredViews$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FinancialReportView"], {
                     section: section
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1058,
+                    lineNumber: 1077,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/ProjectApp.tsx",
-            lineNumber: 1053,
+            lineNumber: 1072,
             columnNumber: 7
         }, this);
     }
@@ -3953,25 +4022,25 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                         children: "Forecast model"
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1067,
+                        lineNumber: 1086,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1066,
+                    lineNumber: 1085,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$StructuredViews$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TimeSeriesView"], {
                     section: section
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1070,
+                    lineNumber: 1089,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/ProjectApp.tsx",
-            lineNumber: 1065,
+            lineNumber: 1084,
             columnNumber: 7
         }, this);
     }
@@ -3991,7 +4060,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                     onAddRow: ()=>setAddOpen(true)
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1081,
+                    lineNumber: 1100,
                     columnNumber: 9
                 }, this),
                 addOpen && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(RowModal, {
@@ -4021,7 +4090,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                     tx: tx
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1084,
+                    lineNumber: 1103,
                     columnNumber: 11
                 }, this),
                 editRow && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(RowModal, {
@@ -4056,13 +4125,13 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                     tx: tx
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1098,
+                    lineNumber: 1117,
                     columnNumber: 11
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/ProjectApp.tsx",
-            lineNumber: 1080,
+            lineNumber: 1099,
             columnNumber: 7
         }, this);
     }
@@ -4101,7 +4170,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                         opacity: ".8"
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1133,
+                        lineNumber: 1152,
                         columnNumber: 111
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("rect", {
@@ -4114,7 +4183,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                         opacity: ".8"
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1133,
+                        lineNumber: 1152,
                         columnNumber: 193
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("rect", {
@@ -4127,7 +4196,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                         opacity: ".8"
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1133,
+                        lineNumber: 1152,
                         columnNumber: 275
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("rect", {
@@ -4140,13 +4209,13 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                         opacity: ".8"
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1133,
+                        lineNumber: 1152,
                         columnNumber: 357
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 1133,
+                lineNumber: 1152,
                 columnNumber: 51
             }, this)
         },
@@ -4169,7 +4238,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                         strokeWidth: "1.3"
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1134,
+                        lineNumber: 1153,
                         columnNumber: 107
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
@@ -4179,13 +4248,13 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                         strokeLinecap: "round"
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1134,
+                        lineNumber: 1153,
                         columnNumber: 198
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 1134,
+                lineNumber: 1153,
                 columnNumber: 47
             }, this)
         },
@@ -4207,7 +4276,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                             strokeWidth: "1.3"
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 1135,
+                            lineNumber: 1154,
                             columnNumber: 134
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
@@ -4217,13 +4286,13 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                             strokeLinecap: "round"
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 1135,
+                            lineNumber: 1154,
                             columnNumber: 205
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1135,
+                    lineNumber: 1154,
                     columnNumber: 74
                 }, this)
             }
@@ -4246,7 +4315,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                             strokeWidth: "1.3"
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 1136,
+                            lineNumber: 1155,
                             columnNumber: 134
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("circle", {
@@ -4257,7 +4326,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                             strokeWidth: "1.2"
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 1136,
+                            lineNumber: 1155,
                             columnNumber: 205
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
@@ -4267,7 +4336,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                             strokeLinecap: "round"
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 1136,
+                            lineNumber: 1155,
                             columnNumber: 275
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
@@ -4277,13 +4346,13 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                             strokeLinecap: "round"
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 1136,
+                            lineNumber: 1155,
                             columnNumber: 376
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1136,
+                    lineNumber: 1155,
                     columnNumber: 74
                 }, this)
             }
@@ -4317,19 +4386,19 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                                 children: n.icon
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 1149,
+                                lineNumber: 1168,
                                 columnNumber: 13
                             }, this),
                             n.label
                         ]
                     }, n.id, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1144,
+                        lineNumber: 1163,
                         columnNumber: 11
                     }, this))
             }, void 0, false, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 1142,
+                lineNumber: 1161,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4346,7 +4415,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                         tx: tx
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1156,
+                        lineNumber: 1175,
                         columnNumber: 11
                     }, this),
                     view === 'records' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(RecordsView, {
@@ -4360,7 +4429,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                         tx: tx
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1160,
+                        lineNumber: 1179,
                         columnNumber: 11
                     }, this),
                     view === 'plazos' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(PlazosView, {
@@ -4372,7 +4441,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                         tx: tx
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1164,
+                        lineNumber: 1183,
                         columnNumber: 11
                     }, this),
                     view === 'equipo' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(EquipoView, {
@@ -4383,7 +4452,7 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                         tx: tx
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1167,
+                        lineNumber: 1186,
                         columnNumber: 11
                     }, this),
                     view === 'detail' && detailRow && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(DetailView, {
@@ -4405,19 +4474,19 @@ function SectionShell({ section, projectId, sectionIdx, search, tx }) {
                         tx: tx
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1170,
+                        lineNumber: 1189,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 1154,
+                lineNumber: 1173,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 1141,
+        lineNumber: 1160,
         columnNumber: 5
     }, this);
 }
@@ -4492,7 +4561,7 @@ function ProjectApp({ projectId }) {
                             strokeWidth: "4"
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 1213,
+                            lineNumber: 1232,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
@@ -4501,13 +4570,13 @@ function ProjectApp({ projectId }) {
                             d: "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                         }, void 0, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 1214,
+                            lineNumber: 1233,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1212,
+                    lineNumber: 1231,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -4515,18 +4584,18 @@ function ProjectApp({ projectId }) {
                     children: T('en').loading
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1216,
+                    lineNumber: 1235,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/ProjectApp.tsx",
-            lineNumber: 1211,
+            lineNumber: 1230,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 1210,
+        lineNumber: 1229,
         columnNumber: 5
     }, this);
     if (error || !project) return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4546,7 +4615,7 @@ function ProjectApp({ projectId }) {
                     children: error ?? T('en').notFound
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1224,
+                    lineNumber: 1243,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -4559,18 +4628,18 @@ function ProjectApp({ projectId }) {
                     children: "← Back"
                 }, void 0, false, {
                     fileName: "[project]/components/ProjectApp.tsx",
-                    lineNumber: 1225,
+                    lineNumber: 1244,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/ProjectApp.tsx",
-            lineNumber: 1223,
+            lineNumber: 1242,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 1222,
+        lineNumber: 1241,
         columnNumber: 5
     }, this);
     const section = project.sections[active];
@@ -4612,17 +4681,17 @@ function ProjectApp({ projectId }) {
                                         strokeLinejoin: "round"
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 1239,
+                                        lineNumber: 1258,
                                         columnNumber: 70
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 1239,
+                                    lineNumber: 1258,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 1238,
+                                lineNumber: 1257,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4633,7 +4702,7 @@ function ProjectApp({ projectId }) {
                                 children: project.name
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 1241,
+                                lineNumber: 1260,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4644,13 +4713,13 @@ function ProjectApp({ projectId }) {
                                 children: project.originalFilename
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 1242,
+                                lineNumber: 1261,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1237,
+                        lineNumber: 1256,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("nav", {
@@ -4664,7 +4733,7 @@ function ProjectApp({ projectId }) {
                                 children: project.sections.length === 1 ? 'Sheet' : `Sheets (${project.sections.length})`
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 1247,
+                                lineNumber: 1266,
                                 columnNumber: 11
                             }, this),
                             project.sections.map((sec, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -4704,7 +4773,7 @@ function ProjectApp({ projectId }) {
                                                     strokeWidth: "1.2"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/ProjectApp.tsx",
-                                                    lineNumber: 1257,
+                                                    lineNumber: 1276,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
@@ -4713,13 +4782,13 @@ function ProjectApp({ projectId }) {
                                                     strokeWidth: "1.1"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/ProjectApp.tsx",
-                                                    lineNumber: 1258,
+                                                    lineNumber: 1277,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 1256,
+                                            lineNumber: 1275,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -4727,7 +4796,7 @@ function ProjectApp({ projectId }) {
                                             children: sec.sheetName
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 1260,
+                                            lineNumber: 1279,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -4735,13 +4804,13 @@ function ProjectApp({ projectId }) {
                                             children: sec.records.length
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 1261,
+                                            lineNumber: 1280,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, i, true, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 1251,
+                                    lineNumber: 1270,
                                     columnNumber: 13
                                 }, this)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4752,7 +4821,7 @@ function ProjectApp({ projectId }) {
                                 children: tx.manage
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 1265,
+                                lineNumber: 1284,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -4785,25 +4854,25 @@ function ProjectApp({ projectId }) {
                                             strokeLinejoin: "round"
                                         }, void 0, false, {
                                             fileName: "[project]/components/ProjectApp.tsx",
-                                            lineNumber: 1271,
+                                            lineNumber: 1290,
                                             columnNumber: 96
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 1271,
+                                        lineNumber: 1290,
                                         columnNumber: 13
                                     }, this),
                                     downloading ? tx.downloading : tx.download
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 1266,
+                                lineNumber: 1285,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1245,
+                        lineNumber: 1264,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4839,30 +4908,30 @@ function ProjectApp({ projectId }) {
                                         strokeLinecap: "round"
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 1281,
+                                        lineNumber: 1300,
                                         columnNumber: 73
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/ProjectApp.tsx",
-                                    lineNumber: 1281,
+                                    lineNumber: 1300,
                                     columnNumber: 13
                                 }, this),
                                 tx.back
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 1277,
+                            lineNumber: 1296,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1276,
+                        lineNumber: 1295,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 1236,
+                lineNumber: 1255,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4883,7 +4952,7 @@ function ProjectApp({ projectId }) {
                                 children: section.sheetName
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 1290,
+                                lineNumber: 1309,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -4898,14 +4967,14 @@ function ProjectApp({ projectId }) {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 1291,
+                                lineNumber: 1310,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "flex-1"
                             }, void 0, false, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 1294,
+                                lineNumber: 1313,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4929,7 +4998,7 @@ function ProjectApp({ projectId }) {
                                                 strokeWidth: "1.2"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 1296,
+                                                lineNumber: 1315,
                                                 columnNumber: 73
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
@@ -4939,13 +5008,13 @@ function ProjectApp({ projectId }) {
                                                 strokeLinecap: "round"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/ProjectApp.tsx",
-                                                lineNumber: 1296,
+                                                lineNumber: 1315,
                                                 columnNumber: 137
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 1296,
+                                        lineNumber: 1315,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -4961,19 +5030,19 @@ function ProjectApp({ projectId }) {
                                         }
                                     }, void 0, false, {
                                         fileName: "[project]/components/ProjectApp.tsx",
-                                        lineNumber: 1297,
+                                        lineNumber: 1316,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/ProjectApp.tsx",
-                                lineNumber: 1295,
+                                lineNumber: 1314,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1289,
+                        lineNumber: 1308,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4986,24 +5055,24 @@ function ProjectApp({ projectId }) {
                             tx: tx
                         }, active, false, {
                             fileName: "[project]/components/ProjectApp.tsx",
-                            lineNumber: 1304,
+                            lineNumber: 1323,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/ProjectApp.tsx",
-                        lineNumber: 1303,
+                        lineNumber: 1322,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/ProjectApp.tsx",
-                lineNumber: 1288,
+                lineNumber: 1307,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/ProjectApp.tsx",
-        lineNumber: 1234,
+        lineNumber: 1253,
         columnNumber: 5
     }, this);
 }

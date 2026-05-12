@@ -109,7 +109,6 @@ const PATTERNS = [
             /^id$/i,
             /ticket/i,
             /caso/i,
-            /carpeta/i,
             /^n°/i,
             /^n$/i
         ]
@@ -156,7 +155,10 @@ const PATTERNS = [
         [
             /responsable pm/i,
             /pm$/i,
-            /project manager/i
+            /project manager/i,
+            /responsable cali/i,
+            /calité/i,
+            /calite/i
         ]
     ],
     [
@@ -264,7 +266,11 @@ function detectLanguage(headers, samples) {
         'prioridad',
         'ingresos',
         'gastos',
-        'precio'
+        'precio',
+        'carpeta',
+        'expediente',
+        'empresa',
+        'gestión'
     ].filter((w)=>text.includes(w)).length;
     const en = [
         'client',
@@ -274,7 +280,15 @@ function detectLanguage(headers, samples) {
         'priority',
         'revenue',
         'expense',
-        'price'
+        'price',
+        'budget',
+        'amount',
+        'estimated',
+        'total',
+        'grant',
+        'disbursement',
+        'investment',
+        'withholding'
     ].filter((w)=>text.includes(w)).length;
     const pt = [
         'cliente',
@@ -282,18 +296,23 @@ function detectLanguage(headers, samples) {
         'respons',
         'prioridade',
         'receita',
-        'despesas'
+        'despesas',
+        'empresa'
     ].filter((w)=>text.includes(w)).length;
-    if (es >= en && es >= pt) return 'es';
-    if (pt > en) return 'pt';
+    // Only classify as Spanish/Portuguese if there's actual evidence; default to English
+    if (es > 0 && es > en && es >= pt) return 'es';
+    if (pt > 0 && pt > en) return 'pt';
     return 'en';
 }
 // ─── Structure detection ──────────────────────────────────────────────────────
 function detectStructure(colLabels, rows, colIds) {
     const h = colLabels.map((s)=>s.toLowerCase());
     const colCount = colLabels.length;
-    // Budget: has an amount/cost column AND a % column
-    if (h.some((x)=>/\bamount\b|cost|\$|budget|monto|\bprecio\b/i.test(x)) && h.some((x)=>/%|percent|porcentaje/i.test(x))) return 'budget';
+    // Budget: has a cost/amount column + (has description/items col OR small column count)
+    // The % column is optional — grant budgets, use-of-funds sheets, etc. rarely have %
+    const hasCostCol = h.some((x)=>/\bamount\b|\bcost\b|\$|budget|monto|\bprecio\b|\bprice\b/i.test(x));
+    const hasItemsCol = h.some((x)=>/item|service|descripci|description|category|purpose|concept|concepto/i.test(x));
+    if (hasCostCol && (hasItemsCol || colCount <= 5)) return 'budget';
     // Financial report OR timeseries: columns 1+ are year/period-based
     // Use strict pattern so "cumul." doesn't trigger it
     const YEAR_PERIOD = /\byear\b|\byr\b|^Q[1-4]\s+\d{4}|\bH[12]\b.*\d{4}|3-year|3 year|\btotal\b/i;
@@ -331,9 +350,30 @@ function detectStructure(colLabels, rows, colIds) {
     }
     return 'records';
 }
+function looksLikeDataValue(s) {
+    // Currency string like $5,000.00 or -$1,200
+    if (/^-?\$[\d,]+(\.\d+)?$/.test(s.trim())) return true;
+    // Pure numeric string with commas (1,200.00)
+    if (/^-?[\d]{1,3}(,\d{3})*(\.\d+)?$/.test(s.trim()) && s.includes(',')) return true;
+    // Percentage
+    if (/^-?\d+(\.\d+)?%$/.test(s.trim())) return true;
+    return false;
+}
+function scoreHeaderCandidate(nonEmpty) {
+    // Prefer rows whose cells look like typical column names
+    let score = 0;
+    for (const s of nonEmpty){
+        if (looksLikeDataValue(s)) score -= 5;
+        if (s.length <= 30 && /^[A-Za-z#]/.test(s)) score += 1;
+        if (/^(#|n[°o]|item|name|date|status|cost|amount|description|service|category|type|priority|area|client|id)/i.test(s)) score += 3;
+    }
+    return score;
+}
 function findHeaderRow(raw) {
     const maxSearch = Math.min(15, raw.length);
     // Pass 1: row where ALL non-null cells are strings → definite header
+    // Collect all candidates then pick the best-scoring one (avoids picking data rows that happen to be all-strings)
+    const candidates = [];
     for(let i = 0; i < maxSearch; i++){
         const row = raw[i];
         const nonEmpty = row.filter((c)=>c != null && c !== '');
@@ -341,14 +381,25 @@ function findHeaderRow(raw) {
         const allStrings = nonEmpty.every((c)=>typeof c === 'string');
         if (!allStrings) continue;
         const hasNextData = raw.slice(i + 1, i + 5).some((r)=>r.some((c)=>c != null && c !== ''));
-        if (hasNextData) {
-            const source = row.map((h)=>h != null && String(h).trim() !== '' ? String(h).replace(/\n/g, ' ').trim() : null);
-            return {
-                idx: i,
-                source,
-                dataStart: i + 1
-            };
-        }
+        if (!hasNextData) continue;
+        const strVals = nonEmpty.map(String);
+        const score = scoreHeaderCandidate(strVals);
+        const source = row.map((h)=>h != null && String(h).trim() !== '' ? String(h).replace(/\n/g, ' ').trim() : null);
+        candidates.push({
+            i,
+            score,
+            source
+        });
+    }
+    if (candidates.length > 0) {
+        // Prefer highest-scoring candidate; if scores tied prefer the earlier one unless a later one scores significantly better
+        candidates.sort((a, b)=>b.score !== a.score ? b.score - a.score : a.i - b.i);
+        const best = candidates[0];
+        return {
+            idx: best.i,
+            source: best.source,
+            dataStart: best.i + 1
+        };
     }
     // Pass 2: row where first col is null but rest are year/period strings
     for(let i = 0; i < maxSearch; i++){
@@ -422,13 +473,33 @@ function parseSheet(buffer, sheetName) {
     });
     const ws = wb.Sheets[sheetName];
     if (!ws) throw new Error(`Sheet "${sheetName}" not found`);
+    // Pre-extract hyperlinks: map "R<row>C<col>" → URL
+    const hyperlinkMap = new Map();
+    const range = ws['!ref'] ? __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$xlsx$2f$xlsx$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["utils"].decode_range(ws['!ref']) : null;
+    if (range) {
+        for(let r = range.s.r; r <= range.e.r; r++){
+            for(let c = range.s.c; c <= range.e.c; c++){
+                const addr = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$xlsx$2f$xlsx$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["utils"].encode_cell({
+                    r,
+                    c
+                });
+                const cell = ws[addr];
+                if (cell?.l?.Target) hyperlinkMap.set(`${r},${c}`, cell.l.Target);
+            }
+        }
+    }
     const raw = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$xlsx$2f$xlsx$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["utils"].sheet_to_json(ws, {
         header: 1,
         raw: true,
         defval: null
     });
     const { source: headerSource, dataStart } = findHeaderRow(raw);
-    const dataRows = raw.slice(dataStart).filter((r)=>r && r.some((c)=>c != null && c !== ''));
+    // Keep track of original row indices for hyperlink lookups
+    const dataRowsWithIdx = raw.map((r, i)=>({
+            row: r,
+            rawIdx: i
+        })).slice(dataStart).filter(({ row })=>row && row.some((c)=>c != null && c !== ''));
+    const dataRows = dataRowsWithIdx.map(({ row })=>row);
     // Determine actual column count from data
     const maxDataWidth = Math.max(headerSource.length, ...dataRows.map((r)=>r.length));
     // Build column labels: null cells in header → auto-generate
@@ -437,11 +508,10 @@ function parseSheet(buffer, sheetName) {
     }, (_, i)=>{
         const h = headerSource[i];
         if (h != null && h.trim() !== '') return h.trim();
-        // For first column with null header: check if data rows have values there
         const hasData = dataRows.some((r)=>r[i] != null && r[i] !== '');
         if (i === 0 && hasData) return 'Item';
         if (hasData) return `Column ${i + 1}`;
-        return ''; // truly empty column — will be skipped
+        return '';
     });
     // Collect values per column for type inference
     const colValues = Array.from({
@@ -460,7 +530,7 @@ function parseSheet(buffer, sheetName) {
     }
     // Build columns (skip truly empty columns)
     const columns = [];
-    const colIndexMap = []; // maps column array index → raw column index
+    const colIndexMap = [];
     const usedIds = new Set();
     for(let i = 0; i < maxDataWidth; i++){
         const label = colLabels[i];
@@ -484,16 +554,20 @@ function parseSheet(buffer, sheetName) {
         colIndexMap.push(i);
     }
     const language = detectLanguage(columns.map((c)=>c.label), sampleStrings);
-    // Build row objects
-    const rows = dataRows.map((rawRow)=>{
+    // Build row objects (use rawIdx to look up hyperlinks per cell)
+    const rows = dataRowsWithIdx.map(({ row: rawRow, rawIdx: rowIdx })=>{
         const row = {
             _id: (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2d$node$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])()
         };
         for(let ci = 0; ci < columns.length; ci++){
-            const rawIdx = colIndexMap[ci];
+            const colIdx = colIndexMap[ci];
             const col = columns[ci];
-            let val = rawRow[rawIdx] ?? null;
-            if (val instanceof Date) {
+            // Prefer hyperlink URL over cell text for url/link columns
+            const hyperlink = hyperlinkMap.get(`${rowIdx},${colIdx}`);
+            let val = rawRow[colIdx] ?? null;
+            if (hyperlink && (col.semanticRole === 'link' || col.type === 'url')) {
+                val = hyperlink;
+            } else if (val instanceof Date) {
                 val = val.toISOString().slice(0, 10);
             } else if (typeof val === 'string') {
                 val = val.trim() || null;
@@ -537,13 +611,8 @@ const FINGERPRINTS = [
             'estado'
         ],
         strong: [
-            'carpeta',
             'área',
             'area',
-            'acción',
-            'accion',
-            'procedimiento',
-            'hechos',
             'desarrollo',
             'devops',
             'engineering',
@@ -568,17 +637,17 @@ const FINGERPRINTS = [
             'sku',
             'inventario',
             'lead',
-            'opportunity'
+            'opportunity',
+            'hechos',
+            'procedimiento'
         ]
     },
     {
         id: 'legal_pendings',
         required: [
-            'expediente',
-            'caso',
-            'arbitraje',
-            'judicial',
-            'demanda',
+            'carpeta',
+            'hechos',
+            'procedimiento',
             'cliente'
         ],
         strong: [
@@ -591,7 +660,9 @@ const FINGERPRINTS = [
             'juzgado',
             'sunafil',
             'denuncia',
-            'carpeta'
+            'carpeta',
+            'hechos',
+            'procedimiento'
         ],
         medium: [
             'cliente',
@@ -599,21 +670,24 @@ const FINGERPRINTS = [
             'estado',
             'plazo',
             'fecha límite',
-            'procedimiento',
-            'hechos'
+            'accion',
+            'acción',
+            'horario'
         ],
         weak: [
             'observaciones',
-            'prioridad'
+            'prioridad',
+            'area',
+            'área'
         ],
         forbid: [
             'sku',
             'inventario',
             'invoice',
             'paciente',
-            'área',
-            'area',
-            'devops'
+            'devops',
+            'sprint',
+            'ticket'
         ]
     },
     {
@@ -1020,6 +1094,25 @@ const TEMPLATE_SLOTS = {
             fallback: 'firstText'
         },
         {
+            role: 'area',
+            required: false,
+            fallback: 'firstEnum'
+        },
+        {
+            role: 'action',
+            required: false,
+            fallback: 'firstEnum'
+        },
+        {
+            role: 'link',
+            required: false
+        },
+        {
+            role: 'pm',
+            required: false,
+            fallback: 'firstText'
+        },
+        {
             role: 'notes',
             required: false
         }
@@ -1384,11 +1477,14 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$server$2f$storage$2e$
 ;
 ;
 const runtime = 'nodejs';
-async function GET() {
+async function GET(request) {
     try {
-        const projects = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$server$2f$storage$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["listProjects"])();
+        const orgId = request.nextUrl.searchParams.get('org');
+        let projects = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$server$2f$storage$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["listProjects"])();
+        if (orgId) projects = projects.filter((p)=>p.orgId === orgId);
         const items = projects.map((p)=>({
                 id: p.id,
+                orgId: p.orgId,
                 name: p.name,
                 originalFilename: p.originalFilename,
                 createdAt: p.createdAt,
@@ -1421,6 +1517,7 @@ async function POST(request) {
         }, {
             status: 400
         });
+        const orgId = formData.get('orgId')?.trim() || undefined;
         const buffer = Buffer.from(await file.arrayBuffer());
         const projectId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2d$node$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
         // Save original Excel
@@ -1443,6 +1540,7 @@ async function POST(request) {
         }
         const project = {
             id: projectId,
+            orgId,
             name,
             originalFilename: file.name,
             createdAt: new Date().toISOString(),

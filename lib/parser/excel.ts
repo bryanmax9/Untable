@@ -27,11 +27,12 @@ function excelDateToISO(serial: number): string {
 
 function detectLanguage(headers: string[], samples: string[]): 'es' | 'en' | 'pt' {
   const text = [...headers, ...samples].join(' ').toLowerCase();
-  const es = ['cliente', 'estado', 'fecha', 'responsable', 'prioridad'].filter(w => text.includes(w)).length;
-  const en = ['client', 'status', 'date', 'owner', 'priority'].filter(w => text.includes(w)).length;
-  const pt = ['cliente', 'data', 'respons', 'prioridade'].filter(w => text.includes(w)).length;
-  if (es >= en && es >= pt) return 'es';
-  if (pt > en) return 'pt';
+  const es = ['cliente', 'estado', 'fecha', 'responsable', 'prioridad', 'carpeta', 'expediente', 'empresa', 'gestión', 'ingresos', 'precio'].filter(w => text.includes(w)).length;
+  const en = ['client', 'status', 'date', 'owner', 'priority', 'budget', 'amount', 'estimated', 'total', 'grant', 'expense', 'revenue', 'investment'].filter(w => text.includes(w)).length;
+  const pt = ['cliente', 'data', 'respons', 'prioridade', 'empresa', 'receita', 'despesas'].filter(w => text.includes(w)).length;
+  // Only classify as Spanish/Portuguese with actual evidence; default to English
+  if (es > 0 && es > en && es >= pt) return 'es';
+  if (pt > 0 && pt > en) return 'pt';
   return 'en';
 }
 
@@ -90,7 +91,7 @@ export function parseExcelBuffer(buffer: ArrayBuffer): ParsedExcel {
     const rawHeader = headerRow[i];
     if (rawHeader == null || String(rawHeader).trim() === '') continue;
 
-    const header = String(rawHeader).trim();
+    const header = String(rawHeader).replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
     let id = slugify(header);
     // Ensure unique IDs
     if (usedIds.has(id)) id = id + '_' + i;

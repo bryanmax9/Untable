@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 type Step = 'drop' | 'sheets' | 'creating';
 
-export function UploadWizard() {
+export function UploadWizard({ orgId }: { orgId?: string } = {}) {
   const router = useRouter();
   const [step, setStep] = useState<Step>('drop');
   const [dragOver, setDragOver] = useState(false);
@@ -67,6 +67,7 @@ export function UploadWizard() {
     fd.append('file', file);
     fd.append('sheets', [...selectedSheets].join(','));
     fd.append('name', projectName || file.name.replace(/\.[^.]+$/, ''));
+    if (orgId) fd.append('orgId', orgId);
     try {
       const res = await fetch('/api/projects', { method: 'POST', body: fd });
       const data = await res.json();
@@ -94,7 +95,7 @@ export function UploadWizard() {
           const active = current === i;
           return (
             <React.Fragment key={s.key}>
-              <div className={cn('flex items-center gap-2', active ? 'text-indigo-600' : done ? 'text-emerald-600' : 'text-slate-300')}>
+              <div className={cn('flex items-center gap-2', active ? 'text-indigo-600' : done ? 'text-emerald-600' : 'text-slate-500')}>
                 <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-semibold border-2',
                   active ? 'border-indigo-600 bg-indigo-600 text-white' :
                   done ? 'border-emerald-500 bg-emerald-500 text-white' :
@@ -145,7 +146,7 @@ export function UploadWizard() {
                 </div>
                 <p className="text-[15px] font-medium text-slate-800">Drop your Excel file here</p>
                 <p className="text-[13px] text-slate-400">or click to browse</p>
-                <p className="text-[11px] text-slate-300 mt-1">.xlsx · .xlsm · .xls · up to 20 MB</p>
+                <p className="text-[11px] text-slate-500 mt-1">.xlsx · .xlsm · .xls · up to 20 MB</p>
               </div>
             )}
           </div>
@@ -188,7 +189,7 @@ export function UploadWizard() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2.5 max-h-[40vh] overflow-y-auto pr-1">
             {sheets.map(sheet => {
               const selected = selectedSheets.has(sheet.name);
               return (
@@ -213,7 +214,7 @@ export function UploadWizard() {
                   <div className="flex-1 min-w-0">
                     <div className={cn('text-[14px] font-semibold', selected ? 'text-indigo-900' : 'text-slate-800')}>{sheet.name}</div>
                     <div className="text-[12px] text-slate-400 mt-0.5">{sheet.rowCount} rows · {sheet.headers.length} columns</div>
-                    <div className="text-[11px] text-slate-300 truncate mt-0.5">
+                    <div className="text-[11px] text-slate-500 truncate mt-0.5">
                       {sheet.headers.slice(0, 5).join(' · ')}{sheet.headers.length > 5 && ` · +${sheet.headers.length - 5} more`}
                     </div>
                   </div>
@@ -227,7 +228,7 @@ export function UploadWizard() {
             <label className="text-[13px] font-medium text-slate-700 mb-1.5 block">Project name</label>
             <input value={projectName} onChange={e => setProjectName(e.target.value)}
               placeholder="e.g. Q2 Sprint Backlog"
-              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-[14px] bg-white outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"/>
+              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-[14px] text-slate-900 bg-white outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"/>
           </div>
 
           {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 text-[13px] rounded-xl px-4 py-3">{error}</div>}

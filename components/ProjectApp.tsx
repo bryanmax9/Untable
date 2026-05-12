@@ -6,6 +6,7 @@ import { cn, initials, avatarColor, fmtDate, daysUntil, truncate } from '@/lib/u
 import {
   KVTableView, FinancialReportView, TimeSeriesView, BudgetView, scenarioVerdictStyle,
 } from '@/components/StructuredViews';
+import { LegalShell } from '@/components/LegalApp';
 
 // ─── LexDesk exact colours (from intra-app.html CSS vars) ──────────────────
 const C = {
@@ -752,7 +753,108 @@ function DashboardView({ section, onViewRow, onGoRecords, onGoPlazos, tx }: {
   );
 }
 
-// ─── Records table ─────────────────────────────────────────────────────────────
+// ─── Record Card ──────────────────────────────────────────────────────────────
+function RecordCard({ row, allCols, bindings, onClick }: {
+  row: Row; allCols: Column[]; bindings: SectionWithRecords['bindings']; onClick: () => void;
+}) {
+  const titleId = bindings.description ?? bindings.client ?? bindings.identifier ?? allCols[0]?.id;
+  const title    = g(row, titleId) || '—';
+  const clientV  = g(row, bindings.client);
+  const statusV  = g(row, bindings.status);
+  const priorityV = g(row, bindings.priority);
+  const assigneeV = g(row, bindings.assignee);
+  const deadlineV = g(row, bindings.deadline);
+  const areaV    = g(row, bindings.area);
+  const identV   = g(row, bindings.identifier);
+
+  const statusCol  = allCols.find(c => c.semanticRole === 'status');
+  const priorityCol = allCols.find(c => c.semanticRole === 'priority');
+
+  const days = deadlineV ? daysUntil(deadlineV) : null;
+  const isOD = days !== null && days < 0;
+  const isSoon = days !== null && days >= 0 && days <= 3;
+  const dLabel = days === null ? null : days === 0 ? 'Today' : isOD ? `${Math.abs(days)}d overdue` : `In ${days}d`;
+  const deadlineColor = isOD ? C.rose600 : isSoon ? C.amber600 : C.text3;
+
+  // Extra fields: enum cols not already shown above
+  const shownIds = new Set([titleId, bindings.client, bindings.status, bindings.priority, bindings.assignee, bindings.deadline, bindings.area, bindings.identifier].filter(Boolean) as string[]);
+  const extraEnums = allCols.filter(c => c.type === 'enum' && !shownIds.has(c.id) && g(row, c.id)).slice(0, 2);
+
+  const avatarName = clientV || title;
+
+  return (
+    <div onClick={onClick}
+      className="rounded-xl p-4 cursor-pointer transition-all flex items-start gap-3"
+      style={{ background: C.bg, border: `0.5px solid ${C.border}` }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 16px rgba(0,0,0,0.06)`; (e.currentTarget as HTMLElement).style.borderColor = C.borderMd; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = ''; (e.currentTarget as HTMLElement).style.borderColor = C.border; }}>
+
+      {/* Avatar */}
+      <Av name={avatarName} size={36} />
+
+      {/* Body */}
+      <div className="flex-1 min-w-0">
+        {/* Top row: id chip + title */}
+        <div className="flex items-start gap-2 mb-1.5">
+          {identV && identV !== title && (
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5" style={{ background: C.bg2, color: C.text3 }}>#{identV}</span>
+          )}
+          <div className="text-[14px] font-semibold leading-snug" style={{ color: C.text }}>{truncate(title, 80)}</div>
+        </div>
+
+        {/* Metadata row 1: client + area + extra enums */}
+        {(clientV || areaV || extraEnums.length > 0) && (
+          <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+            {clientV && clientV !== title && (
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: C.indigo50, color: C.indigo800 }}>{truncate(clientV, 20)}</span>
+            )}
+            {areaV && (
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: C.violet50, color: C.violet800 }}>{truncate(areaV, 20)}</span>
+            )}
+            {extraEnums.map(col => (
+              <span key={col.id} className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: C.slate50, color: C.slate800 }}>{g(row, col.id)}</span>
+            ))}
+          </div>
+        )}
+
+        {/* Metadata row 2: assignee + deadline */}
+        {(assigneeV || deadlineV) && (
+          <div className="flex items-center gap-3 flex-wrap">
+            {assigneeV && (
+              <div className="flex items-center gap-1.5">
+                <div className={cn('rounded-full flex items-center justify-center font-semibold flex-shrink-0', avatarColor(assigneeV))}
+                  style={{ width: 18, height: 18, fontSize: 7 }}>
+                  {initials(assigneeV)}
+                </div>
+                <span className="text-[11px]" style={{ color: C.text3 }}>{truncate(assigneeV, 24)}</span>
+              </div>
+            )}
+            {dLabel && (
+              <div className="flex items-center gap-1">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <circle cx="5" cy="5" r="4" stroke="currentColor" strokeWidth="1.2"/>
+                  <path d="M5 3v2l1.5 1" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+                </svg>
+                <span className="text-[11px] font-medium" style={{ color: deadlineColor }}>{fmtDate(deadlineV)} · {dLabel}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Right side: status + priority + chevron */}
+      <div className="flex flex-col items-end gap-1.5 flex-shrink-0 ml-2">
+        {statusV && <StatusBadge val={statusV} col={statusCol} />}
+        {priorityV && <StatusBadge val={priorityV} col={priorityCol} />}
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="mt-auto" style={{ color: C.text3, opacity: 0.5 }}>
+          <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// ─── Records view — card list ──────────────────────────────────────────────────
 function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, onViewRow, tx }: {
   section: SectionWithRecords; projectId: string; sectionIdx: number; search: string;
   rows: Row[]; setRows: React.Dispatch<React.SetStateAction<Row[]>>;
@@ -761,12 +863,10 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
   const [addOpen, setAddOpen] = useState(false);
   const [filters, setFilters] = useState<Record<string,string>>({});
   const allCols = section.schema.columns;
-  const visCols = summaryCols(allCols);
   const enumCols = allCols.filter(c => c.type === 'enum');
-  const { bindings, colorMaps } = section;
+  const { bindings } = section;
   const blank = Object.fromEntries(allCols.map(c => [c.id, '']));
   const newRef = useRef<string|null>(null);
-  const statusCol = allCols.find(c => c.semanticRole === 'status');
 
   const displayed = rows.filter(r => {
     for (const [id, v] of Object.entries(filters)) if (v && g(r, id) !== v) return false;
@@ -774,22 +874,11 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
     return true;
   });
 
-  function cellNode(col: Column, raw: unknown): React.ReactNode {
-    if (raw == null || raw === '') return <span style={{ color: C.text3, fontSize: 12 }}>—</span>;
-    const s = String(raw);
-    if (col.type === 'enum') return <StatusBadge val={s} col={col} />;
-    if (col.type === 'date') return <span style={{ fontSize: 12, color: C.text2, whiteSpace: 'nowrap' }}>{fmtDate(s)}</span>;
-    return <span style={{ fontSize: 13, color: C.text }}>{truncate(s, 40)}</span>;
-  }
-
-  // Client column: show with avatar
-  const clientId = bindings.client;
-
   return (
     <div className="flex flex-col gap-3">
       {/* Toolbar */}
       <div className="flex items-center gap-2 flex-wrap">
-        {enumCols.slice(0, 5).map(col => (
+        {enumCols.slice(0, 4).map(col => (
           <div key={col.id} className="relative">
             <select value={filters[col.id] ?? ''} onChange={e => setFilters(p => ({ ...p, [col.id]: e.target.value }))}
               className="text-[12px] pl-3 pr-7 py-1.5 rounded-lg appearance-none outline-none cursor-pointer transition-colors"
@@ -808,7 +897,7 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
           </button>
         )}
         <div className="flex-1"/>
-        <span className="text-[12px] mr-1" style={{ color: C.text3 }}>{displayed.length} / {rows.length}</span>
+        <span className="text-[12px] mr-2" style={{ color: C.text3 }}>{displayed.length} / {rows.length}</span>
         <button onClick={() => setAddOpen(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
           style={{ background: C.indigo600, boxShadow: `0 2px 8px rgba(79,70,229,0.25)` }}>
@@ -817,60 +906,32 @@ function RecordsView({ section, projectId, sectionIdx, search, rows, setRows, on
         </button>
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl overflow-hidden" style={{ background: C.bg, border: `0.5px solid ${C.border}` }}>
-        {rows.length === 0 ? (
-          <div className="py-20 flex flex-col items-center gap-4 text-center px-8">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: C.indigo50 }}>
-              <svg className="w-7 h-7" style={{ color: C.indigo600 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-[14px] font-semibold mb-1" style={{ color: C.text }}>No rows yet</p>
-              <p className="text-[13px] max-w-xs" style={{ color: C.text3 }}>{tx.noRows}</p>
-            </div>
-            <button onClick={() => setAddOpen(true)} className="px-5 py-2 rounded-lg text-[13px] font-semibold text-white" style={{ background: C.indigo600 }}>{tx.add}</button>
+      {/* Card list */}
+      {rows.length === 0 ? (
+        <div className="rounded-xl py-20 flex flex-col items-center gap-4 text-center px-8" style={{ background: C.bg, border: `0.5px solid ${C.border}` }}>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: C.indigo50 }}>
+            <svg className="w-7 h-7" style={{ color: C.indigo600 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
           </div>
-        ) : displayed.length === 0 ? (
-          <div className="py-14 text-center text-[13px]" style={{ color: C.text3 }}>{tx.noResults}</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead style={{ borderBottom: `0.5px solid ${C.border}`, background: C.bg2 }}>
-                <tr>
-                  {visCols.map(col => (
-                    <th key={col.id} className="px-4 py-3 text-left" style={{ fontSize: 11, fontWeight: 600, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
-                      {col.label}
-                    </th>
-                  ))}
-                  <th style={{ width: 32 }}/>
-                </tr>
-              </thead>
-              <tbody>
-                {displayed.map((row, i) => (
-                  <tr key={row._id ?? i} onClick={() => onViewRow(row)}
-                    style={{ borderBottom: `0.5px solid ${C.border}`, cursor: 'pointer' }}
-                    onMouseEnter={e=>(e.currentTarget.style.background='#fafaff')}
-                    onMouseLeave={e=>(e.currentTarget.style.background='')}>
-                    {visCols.map(col => (
-                      <td key={col.id} className="px-4 py-3 align-middle" style={{ maxWidth: 200 }}>
-                        {col.id === clientId && g(row, clientId) ? (
-                          <div className="flex items-center gap-2">
-                            <Av name={g(row, clientId)} size={22} />
-                            <span style={{ fontSize: 13, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{truncate(g(row, clientId), 28)}</span>
-                          </div>
-                        ) : cellNode(col, row[col.id])}
-                      </td>
-                    ))}
-                    <td className="px-2" style={{ color: C.text3, fontSize: 13 }}>›</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <p className="text-[14px] font-semibold mb-1" style={{ color: C.text }}>{tx.noRows.split('—')[0].trim()}</p>
+            <p className="text-[13px]" style={{ color: C.text3 }}>Use the form below to add the first record.</p>
           </div>
-        )}
-      </div>
+          <button onClick={() => setAddOpen(true)} className="flex items-center gap-2 px-5 py-2 rounded-lg text-[13px] font-semibold text-white" style={{ background: C.indigo600 }}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+            {tx.add}
+          </button>
+        </div>
+      ) : displayed.length === 0 ? (
+        <div className="rounded-xl py-14 text-center text-[13px]" style={{ background: C.bg, border: `0.5px solid ${C.border}`, color: C.text3 }}>{tx.noResults}</div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {displayed.map(row => (
+            <RecordCard key={row._id} row={row} allCols={allCols} bindings={bindings} onClick={() => onViewRow(row)} />
+          ))}
+        </div>
+      )}
 
       {addOpen && (
         <RowModal title={tx.addRowTitle} columns={allCols} initial={blank} rows={rows}
@@ -1017,11 +1078,46 @@ function EquipoView({ section, tx }: { section: SectionWithRecords; tx: Tx }) {
   );
 }
 
+// ─── Runtime helpers for backwards-compatible schema upgrades ─────────────────
+
+// Re-detect language from actual column labels + sample data at render time.
+// This fixes projects uploaded before the language-detection bug was fixed.
+function runtimeLanguage(section: SectionWithRecords): 'es' | 'en' | 'pt' {
+  const stored = section.schema.language;
+  const headers = section.schema.columns.map(c => c.label);
+  const samples = section.records.slice(0, 8).flatMap(r =>
+    Object.values(r).filter(v => typeof v === 'string' && (v as string).length > 2 && (v as string).length < 80)
+  ).map(String);
+  const text = [...headers, ...samples].join(' ').toLowerCase();
+  const es = ['cliente','estado','fecha','responsable','prioridad','carpeta','expediente','empresa','gestión','precio'].filter(w => text.includes(w)).length;
+  const en = ['client','status','date','owner','priority','budget','amount','estimated','total','grant','expense','revenue','withholding','disbursement'].filter(w => text.includes(w)).length;
+  const pt = ['cliente','data','respons','prioridade','empresa','receita','despesas'].filter(w => text.includes(w)).length;
+  if (es > 0 && es > en && es >= pt) return 'es';
+  if (pt > 0 && pt > en) return 'pt';
+  // If both es and en are 0, trust the stored value; otherwise prefer detected
+  return (es === 0 && en === 0) ? stored : 'en';
+}
+
+// Re-detect structure for projects uploaded before the structure-detection fix.
+// Upgrades 'records' → 'budget' if column labels match the budget fingerprint.
+function runtimeStructure(section: SectionWithRecords): string {
+  const stored = section.schema.structure ?? 'records';
+  if (stored !== 'records') return stored; // trust explicit non-record structures
+  const h = section.schema.columns.map(c => c.label.toLowerCase());
+  const colCount = section.schema.columns.length;
+  const hasCostCol = h.some(x => /\bamount\b|\bcost\b|\$|budget|monto|\bprecio\b|\bprice\b/i.test(x));
+  const hasItemsCol = h.some(x => /item|service|descripci|description|category|purpose|concept/i.test(x));
+  if (hasCostCol && (hasItemsCol || colCount <= 5)) return 'budget';
+  return stored;
+}
+
 // ─── Section wrapper ──────────────────────────────────────────────────────────
-function SectionShell({ section, projectId, sectionIdx, search, tx }: {
+function SectionShell({ section, projectId, sectionIdx, search, tx: _txIgnored }: {
   section: SectionWithRecords; projectId: string; sectionIdx: number; search: string; tx: Tx;
 }) {
-  const structure = section.schema.structure ?? 'records';
+  // Re-detect language and structure at render time to handle pre-fix uploads
+  const tx = T(runtimeLanguage(section));
+  const structure = runtimeStructure(section);
 
   // Non-record structures: route directly to their specialised views (no nav bar)
   if (structure === 'kv_table') {
@@ -1227,8 +1323,13 @@ export function ProjectApp({ projectId }: { projectId: string }) {
     </div>
   );
 
+  // Route to the specialised legal app when any section is legal_pendings
+  if (project.sections.some(s => s.domain === 'legal_pendings')) {
+    return <LegalShell project={project} />;
+  }
+
   const section = project.sections[active];
-  const tx = T(section.schema.language);
+  const tx = T(runtimeLanguage(section));
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: C.bg3 }}>
@@ -1274,12 +1375,13 @@ export function ProjectApp({ projectId }: { projectId: string }) {
         </nav>
 
         <div className="px-2 py-3" style={{ borderTop: `0.5px solid ${C.border}` }}>
-          <Link href="/" className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] transition-all"
+          <Link href={project.orgId ? `/org/${project.orgId}` : '/'}
+            className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] transition-all"
             style={{ color: C.text3, textDecoration: 'none' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.bg2; (e.currentTarget as HTMLElement).style.color = C.text2; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ''; (e.currentTarget as HTMLElement).style.color = C.text3; }}>
             <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M7 1.5L3 5.5l4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
-            {tx.back}
+            ← Projects
           </Link>
         </div>
       </aside>

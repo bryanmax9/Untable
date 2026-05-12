@@ -1,1 +1,968 @@
-[]
+[
+  {
+    "id": "0e7d5e41-fcc3-42f9-8a3e-e791a4511a54",
+    "name": "SOFTWARE_DEV_TASKS_-_Sprint_Backlog",
+    "originalFilename": "SOFTWARE_DEV_TASKS_-_Sprint_Backlog.xlsx",
+    "createdAt": "2026-05-12T03:29:50.115Z",
+    "sections": [
+      {
+        "sheetName": "DEV TEAM II",
+        "domain": "legal_pendings",
+        "schema": {
+          "columns": [
+            {
+              "id": "n",
+              "excelHeader": "N°",
+              "label": "N°",
+              "type": "number",
+              "semanticRole": "identifier"
+            },
+            {
+              "id": "cliente",
+              "excelHeader": "CLIENTE",
+              "label": "CLIENTE",
+              "type": "text",
+              "semanticRole": "client"
+            },
+            {
+              "id": "carpeta",
+              "excelHeader": "CARPETA",
+              "label": "CARPETA",
+              "type": "text",
+              "semanticRole": null
+            },
+            {
+              "id": "fecha_de_solicitud",
+              "excelHeader": "FECHA DE SOLICITUD",
+              "label": "FECHA DE SOLICITUD",
+              "type": "date",
+              "semanticRole": "created"
+            },
+            {
+              "id": "responsable_pm",
+              "excelHeader": "RESPONSABLE PM",
+              "label": "RESPONSABLE PM",
+              "type": "enum",
+              "semanticRole": "pm",
+              "options": [
+                "ANDREA",
+                "CAMILA"
+              ]
+            },
+            {
+              "id": "accion",
+              "excelHeader": "ACCION",
+              "label": "ACCION",
+              "type": "enum",
+              "semanticRole": "action",
+              "options": [
+                "HACER",
+                "REVISAR",
+                "RECORDAR"
+              ]
+            },
+            {
+              "id": "descripcion_del_servicio_asunto",
+              "excelHeader": "DESCRIPCIÓN DEL SERVICIO (ASUNTO)",
+              "label": "DESCRIPCIÓN DEL SERVICIO (ASUNTO)",
+              "type": "text",
+              "semanticRole": "description"
+            },
+            {
+              "id": "hechos",
+              "excelHeader": "HECHOS",
+              "label": "HECHOS",
+              "type": "longtext",
+              "semanticRole": null
+            },
+            {
+              "id": "procedimiento_como_hacerlo",
+              "excelHeader": "PROCEDIMIENTO (¿COMO HACERLO?)",
+              "label": "PROCEDIMIENTO (¿COMO HACERLO?)",
+              "type": "longtext",
+              "semanticRole": null
+            },
+            {
+              "id": "fecha_actual",
+              "excelHeader": "FECHA ACTUAL",
+              "label": "FECHA ACTUAL",
+              "type": "date",
+              "semanticRole": null
+            },
+            {
+              "id": "fecha_limite",
+              "excelHeader": "FECHA LÍMITE",
+              "label": "FECHA LÍMITE",
+              "type": "date",
+              "semanticRole": "deadline"
+            },
+            {
+              "id": "horario",
+              "excelHeader": "HORARIO",
+              "label": "HORARIO",
+              "type": "enum",
+              "semanticRole": null,
+              "options": [
+                "OFICINA",
+                "TODO EL DIA"
+              ]
+            },
+            {
+              "id": "responsable",
+              "excelHeader": "RESPONSABLE",
+              "label": "RESPONSABLE",
+              "type": "enum",
+              "semanticRole": "assignee",
+              "options": [
+                "DIEGO",
+                "MARTIN",
+                "VALERIA"
+              ]
+            },
+            {
+              "id": "area",
+              "excelHeader": "AREA",
+              "label": "AREA",
+              "type": "text",
+              "semanticRole": "area"
+            },
+            {
+              "id": "estado",
+              "excelHeader": "ESTADO",
+              "label": "ESTADO",
+              "type": "enum",
+              "semanticRole": "status",
+              "options": [
+                "EN PROGRESO",
+                "PENDIENTE",
+                "EN PROCESO"
+              ]
+            },
+            {
+              "id": "prioridad",
+              "excelHeader": "PRIORIDAD",
+              "label": "PRIORIDAD",
+              "type": "enum",
+              "semanticRole": "priority",
+              "options": [
+                "URGENTE",
+                "ALTA",
+                "MEDIA",
+                "BAJA"
+              ]
+            },
+            {
+              "id": "link",
+              "excelHeader": "LINK",
+              "label": "LINK",
+              "type": "url",
+              "semanticRole": "link"
+            },
+            {
+              "id": "observaciones",
+              "excelHeader": "OBSERVACIONES",
+              "label": "OBSERVACIONES",
+              "type": "text",
+              "semanticRole": "notes"
+            }
+          ],
+          "language": "es",
+          "rowCount": 30,
+          "sheetName": "DEV TEAM II",
+          "structure": "records"
+        },
+        "bindings": {
+          "identifier": "n",
+          "client": "cliente",
+          "status": "estado",
+          "priority": "prioridad",
+          "assignee": "responsable",
+          "deadline": "fecha_limite",
+          "description": "descripcion_del_servicio_asunto",
+          "area": "area",
+          "action": "accion",
+          "link": "link",
+          "pm": "responsable_pm",
+          "notes": "observaciones"
+        },
+        "colorMaps": {
+          "status": {
+            "EN PROGRESO": "sky",
+            "PENDIENTE": "amber",
+            "EN PROCESO": "sky"
+          },
+          "priority": {
+            "URGENTE": "rose",
+            "ALTA": "rose",
+            "MEDIA": "indigo",
+            "BAJA": "slate"
+          },
+          "action": {
+            "HACER": "slate",
+            "REVISAR": "slate",
+            "RECORDAR": "slate"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "5351d1e3-12a2-435f-8159-19b96d28d018",
+    "orgId": "12613196-452c-4fe2-8f8f-c78bce212f80",
+    "name": "SOFTWARE_DEV_TASKS_-_Sprint_Backlog",
+    "originalFilename": "SOFTWARE_DEV_TASKS_-_Sprint_Backlog.xlsx",
+    "createdAt": "2026-05-12T05:53:02.521Z",
+    "sections": [
+      {
+        "sheetName": "DEV TEAM II",
+        "domain": "legal_pendings",
+        "schema": {
+          "columns": [
+            {
+              "id": "n",
+              "excelHeader": "N°",
+              "label": "N°",
+              "type": "number",
+              "semanticRole": "identifier"
+            },
+            {
+              "id": "cliente",
+              "excelHeader": "CLIENTE",
+              "label": "CLIENTE",
+              "type": "text",
+              "semanticRole": "client"
+            },
+            {
+              "id": "carpeta",
+              "excelHeader": "CARPETA",
+              "label": "CARPETA",
+              "type": "text",
+              "semanticRole": null
+            },
+            {
+              "id": "fecha_de_solicitud",
+              "excelHeader": "FECHA DE SOLICITUD",
+              "label": "FECHA DE SOLICITUD",
+              "type": "date",
+              "semanticRole": "created"
+            },
+            {
+              "id": "responsable_pm",
+              "excelHeader": "RESPONSABLE PM",
+              "label": "RESPONSABLE PM",
+              "type": "enum",
+              "semanticRole": "pm",
+              "options": [
+                "ANDREA",
+                "CAMILA"
+              ]
+            },
+            {
+              "id": "accion",
+              "excelHeader": "ACCION",
+              "label": "ACCION",
+              "type": "enum",
+              "semanticRole": "action",
+              "options": [
+                "HACER",
+                "REVISAR",
+                "RECORDAR"
+              ]
+            },
+            {
+              "id": "descripcion_del_servicio_asunto",
+              "excelHeader": "DESCRIPCIÓN DEL SERVICIO (ASUNTO)",
+              "label": "DESCRIPCIÓN DEL SERVICIO (ASUNTO)",
+              "type": "text",
+              "semanticRole": "description"
+            },
+            {
+              "id": "hechos",
+              "excelHeader": "HECHOS",
+              "label": "HECHOS",
+              "type": "longtext",
+              "semanticRole": null
+            },
+            {
+              "id": "procedimiento_como_hacerlo",
+              "excelHeader": "PROCEDIMIENTO (¿COMO HACERLO?)",
+              "label": "PROCEDIMIENTO (¿COMO HACERLO?)",
+              "type": "longtext",
+              "semanticRole": null
+            },
+            {
+              "id": "fecha_actual",
+              "excelHeader": "FECHA ACTUAL",
+              "label": "FECHA ACTUAL",
+              "type": "date",
+              "semanticRole": null
+            },
+            {
+              "id": "fecha_limite",
+              "excelHeader": "FECHA LÍMITE",
+              "label": "FECHA LÍMITE",
+              "type": "date",
+              "semanticRole": "deadline"
+            },
+            {
+              "id": "horario",
+              "excelHeader": "HORARIO",
+              "label": "HORARIO",
+              "type": "enum",
+              "semanticRole": null,
+              "options": [
+                "OFICINA",
+                "TODO EL DIA"
+              ]
+            },
+            {
+              "id": "responsable",
+              "excelHeader": "RESPONSABLE",
+              "label": "RESPONSABLE",
+              "type": "enum",
+              "semanticRole": "assignee",
+              "options": [
+                "DIEGO",
+                "MARTIN",
+                "VALERIA"
+              ]
+            },
+            {
+              "id": "area",
+              "excelHeader": "AREA",
+              "label": "AREA",
+              "type": "text",
+              "semanticRole": "area"
+            },
+            {
+              "id": "estado",
+              "excelHeader": "ESTADO",
+              "label": "ESTADO",
+              "type": "enum",
+              "semanticRole": "status",
+              "options": [
+                "EN PROGRESO",
+                "PENDIENTE",
+                "EN PROCESO"
+              ]
+            },
+            {
+              "id": "prioridad",
+              "excelHeader": "PRIORIDAD",
+              "label": "PRIORIDAD",
+              "type": "enum",
+              "semanticRole": "priority",
+              "options": [
+                "URGENTE",
+                "ALTA",
+                "MEDIA",
+                "BAJA"
+              ]
+            },
+            {
+              "id": "link",
+              "excelHeader": "LINK",
+              "label": "LINK",
+              "type": "url",
+              "semanticRole": "link"
+            },
+            {
+              "id": "observaciones",
+              "excelHeader": "OBSERVACIONES",
+              "label": "OBSERVACIONES",
+              "type": "text",
+              "semanticRole": "notes"
+            }
+          ],
+          "language": "es",
+          "rowCount": 30,
+          "sheetName": "DEV TEAM II",
+          "structure": "records"
+        },
+        "bindings": {
+          "identifier": "n",
+          "client": "cliente",
+          "status": "estado",
+          "priority": "prioridad",
+          "assignee": "responsable",
+          "deadline": "fecha_limite",
+          "description": "descripcion_del_servicio_asunto",
+          "area": "area",
+          "action": "accion",
+          "link": "link",
+          "pm": "responsable_pm",
+          "notes": "observaciones"
+        },
+        "colorMaps": {
+          "status": {
+            "EN PROGRESO": "sky",
+            "PENDIENTE": "amber",
+            "EN PROCESO": "sky"
+          },
+          "priority": {
+            "URGENTE": "rose",
+            "ALTA": "rose",
+            "MEDIA": "indigo",
+            "BAJA": "slate"
+          },
+          "action": {
+            "HACER": "slate",
+            "REVISAR": "slate",
+            "RECORDAR": "slate"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "e8c65fe3-3695-48ba-9fce-8290cb972a1d",
+    "orgId": "12613196-452c-4fe2-8f8f-c78bce212f80",
+    "name": "VoiceBridge_Financial_Model (3)",
+    "originalFilename": "VoiceBridge_Financial_Model (3).xlsx",
+    "createdAt": "2026-05-12T05:55:32.101Z",
+    "sections": [
+      {
+        "sheetName": "Assumptions",
+        "domain": "generic_table",
+        "schema": {
+          "columns": [
+            {
+              "id": "parameter",
+              "excelHeader": "Parameter",
+              "label": "Parameter",
+              "type": "text",
+              "semanticRole": null
+            },
+            {
+              "id": "value",
+              "excelHeader": "Value",
+              "label": "Value",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "notes",
+              "excelHeader": "Notes",
+              "label": "Notes",
+              "type": "text",
+              "semanticRole": "notes"
+            }
+          ],
+          "language": "en",
+          "rowCount": 18,
+          "sheetName": "Assumptions",
+          "structure": "kv_table"
+        },
+        "bindings": {},
+        "colorMaps": {}
+      },
+      {
+        "sheetName": "Y1 Monthly Forecast",
+        "domain": "generic_table",
+        "schema": {
+          "columns": [
+            {
+              "id": "month",
+              "excelHeader": "Month",
+              "label": "Month",
+              "type": "text",
+              "semanticRole": null
+            },
+            {
+              "id": "free_users_cumul",
+              "excelHeader": "Free Users (cumul.)",
+              "label": "Free Users (cumul.)",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "new_pro_users",
+              "excelHeader": "New Pro Users",
+              "label": "New Pro Users",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "pro_users_cumul",
+              "excelHeader": "Pro Users (cumul.)",
+              "label": "Pro Users (cumul.)",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "mrr",
+              "excelHeader": "MRR ($)",
+              "label": "MRR ($)",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "institutional_revenue",
+              "excelHeader": "Institutional Revenue ($)",
+              "label": "Institutional Revenue ($)",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "total_revenue",
+              "excelHeader": "Total Revenue ($)",
+              "label": "Total Revenue ($)",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "monthly_expense",
+              "excelHeader": "Monthly Expense ($)",
+              "label": "Monthly Expense ($)",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "net_income",
+              "excelHeader": "Net Income ($)",
+              "label": "Net Income ($)",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "notes",
+              "excelHeader": "Notes",
+              "label": "Notes",
+              "type": "text",
+              "semanticRole": "notes"
+            }
+          ],
+          "language": "en",
+          "rowCount": 13,
+          "sheetName": "Y1 Monthly Forecast",
+          "structure": "timeseries"
+        },
+        "bindings": {},
+        "colorMaps": {}
+      },
+      {
+        "sheetName": "3-Year P&L",
+        "domain": "generic_table",
+        "schema": {
+          "columns": [
+            {
+              "id": "item",
+              "excelHeader": "Item",
+              "label": "Item",
+              "type": "text",
+              "semanticRole": null
+            },
+            {
+              "id": "year_1_apr_2026_mar_2027",
+              "excelHeader": "Year 1 (Apr 2026–Mar 2027)",
+              "label": "Year 1 (Apr 2026–Mar 2027)",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "year_2_apr_2027_mar_2028",
+              "excelHeader": "Year 2 (Apr 2027–Mar 2028)",
+              "label": "Year 2 (Apr 2027–Mar 2028)",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "year_3_apr_2028_mar_2029",
+              "excelHeader": "Year 3 (Apr 2028–Mar 2029)",
+              "label": "Year 3 (Apr 2028–Mar 2029)",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "3_year_total",
+              "excelHeader": "3-Year Total",
+              "label": "3-Year Total",
+              "type": "number",
+              "semanticRole": null
+            }
+          ],
+          "language": "en",
+          "rowCount": 22,
+          "sheetName": "3-Year P&L",
+          "structure": "financial_report"
+        },
+        "bindings": {},
+        "colorMaps": {}
+      },
+      {
+        "sheetName": "Sensitivity Analysis",
+        "domain": "generic_table",
+        "schema": {
+          "columns": [
+            {
+              "id": "scenario",
+              "excelHeader": "Scenario",
+              "label": "Scenario",
+              "type": "text",
+              "semanticRole": null
+            },
+            {
+              "id": "change_from_base",
+              "excelHeader": "Change from Base",
+              "label": "Change from Base",
+              "type": "text",
+              "semanticRole": null
+            },
+            {
+              "id": "y3_revenue_impact",
+              "excelHeader": "Y3 Revenue Impact ($)",
+              "label": "Y3 Revenue Impact ($)",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "y3_operating_income",
+              "excelHeader": "Y3 Operating Income ($)",
+              "label": "Y3 Operating Income ($)",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "verdict",
+              "excelHeader": "Verdict",
+              "label": "Verdict",
+              "type": "text",
+              "semanticRole": null
+            },
+            {
+              "id": "key_lever",
+              "excelHeader": "Key Lever",
+              "label": "Key Lever",
+              "type": "text",
+              "semanticRole": null
+            }
+          ],
+          "language": "en",
+          "rowCount": 6,
+          "sheetName": "Sensitivity Analysis",
+          "structure": "records"
+        },
+        "bindings": {},
+        "colorMaps": {}
+      },
+      {
+        "sheetName": "Unit Economics",
+        "domain": "generic_table",
+        "schema": {
+          "columns": [
+            {
+              "id": "metric",
+              "excelHeader": "METRIC",
+              "label": "METRIC",
+              "type": "text",
+              "semanticRole": null
+            },
+            {
+              "id": "value",
+              "excelHeader": "VALUE",
+              "label": "VALUE",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "basis",
+              "excelHeader": "BASIS",
+              "label": "BASIS",
+              "type": "text",
+              "semanticRole": null
+            }
+          ],
+          "language": "en",
+          "rowCount": 11,
+          "sheetName": "Unit Economics",
+          "structure": "kv_table"
+        },
+        "bindings": {},
+        "colorMaps": {}
+      },
+      {
+        "sheetName": "Use of Sunstone Funds",
+        "domain": "generic_table",
+        "schema": {
+          "columns": [
+            {
+              "id": "allocation_category",
+              "excelHeader": "Allocation Category",
+              "label": "Allocation Category",
+              "type": "text",
+              "semanticRole": null
+            },
+            {
+              "id": "amount",
+              "excelHeader": "Amount ($)",
+              "label": "Amount ($)",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "of_total",
+              "excelHeader": "% of Total",
+              "label": "% of Total",
+              "type": "number",
+              "semanticRole": null
+            },
+            {
+              "id": "purpose",
+              "excelHeader": "Purpose",
+              "label": "Purpose",
+              "type": "text",
+              "semanticRole": null
+            }
+          ],
+          "language": "en",
+          "rowCount": 7,
+          "sheetName": "Use of Sunstone Funds",
+          "structure": "budget"
+        },
+        "bindings": {},
+        "colorMaps": {}
+      }
+    ]
+  },
+  {
+    "id": "12d75b58-04ff-46e0-932c-f4b7a8759c25",
+    "orgId": "12613196-452c-4fe2-8f8f-c78bce212f80",
+    "name": "PENDIENTES LEGALES - Pedidos Calité",
+    "originalFilename": "PENDIENTES LEGALES - Pedidos Calité.xlsx",
+    "createdAt": "2026-05-12T06:46:52.876Z",
+    "sections": [
+      {
+        "sheetName": "TEMPLO 2",
+        "domain": "legal_pendings",
+        "schema": {
+          "columns": [
+            {
+              "id": "n",
+              "excelHeader": "N°",
+              "label": "N°",
+              "type": "number",
+              "semanticRole": "identifier"
+            },
+            {
+              "id": "cliente",
+              "excelHeader": "CLIENTE",
+              "label": "CLIENTE",
+              "type": "text",
+              "semanticRole": "client"
+            },
+            {
+              "id": "carpeta",
+              "excelHeader": "CARPETA",
+              "label": "CARPETA",
+              "type": "enum",
+              "semanticRole": null,
+              "options": [
+                "RNP",
+                "PROCESOS JUDICIALES",
+                "ARBITRAJE",
+                "SERVICIOS GENERALES",
+                "VERIFICACION SUNAFIL"
+              ]
+            },
+            {
+              "id": "fecha_de_solicitud",
+              "excelHeader": "FECHA DE SOLICITUD",
+              "label": "FECHA DE SOLICITUD",
+              "type": "date",
+              "semanticRole": "created"
+            },
+            {
+              "id": "responsable_calite",
+              "excelHeader": "RESPONSABLE CALITÉ",
+              "label": "RESPONSABLE CALITÉ",
+              "type": "enum",
+              "semanticRole": "pm",
+              "options": [
+                "SASHA",
+                "ARIAN",
+                "VICTOR"
+              ]
+            },
+            {
+              "id": "accion",
+              "excelHeader": "ACCION",
+              "label": "ACCION",
+              "type": "enum",
+              "semanticRole": "action",
+              "options": [
+                "REVISAR",
+                "HACER",
+                "RECORDAR"
+              ]
+            },
+            {
+              "id": "descripcion_del_servicio_asunto",
+              "excelHeader": "DESCRIPCIÓN DEL SERVICIO (ASUNTO)",
+              "label": "DESCRIPCIÓN DEL SERVICIO (ASUNTO)",
+              "type": "text",
+              "semanticRole": "description"
+            },
+            {
+              "id": "hechos",
+              "excelHeader": "HECHOS",
+              "label": "HECHOS",
+              "type": "longtext",
+              "semanticRole": null
+            },
+            {
+              "id": "procedimiento_como_hacerlo",
+              "excelHeader": "PROCEDIMIENTO (¿COMO HACERLO?)",
+              "label": "PROCEDIMIENTO (¿COMO HACERLO?)",
+              "type": "longtext",
+              "semanticRole": null
+            },
+            {
+              "id": "fecha_actual",
+              "excelHeader": "FECHA ACTUAL",
+              "label": "FECHA ACTUAL",
+              "type": "date",
+              "semanticRole": null
+            },
+            {
+              "id": "fecha_limite",
+              "excelHeader": "FECHA LÍMITE",
+              "label": "FECHA LÍMITE",
+              "type": "date",
+              "semanticRole": "deadline"
+            },
+            {
+              "id": "horario",
+              "excelHeader": "HORARIO",
+              "label": "HORARIO",
+              "type": "enum",
+              "semanticRole": null,
+              "options": [
+                "TODO EL DIA",
+                "OFICINA",
+                "MESA DE PARTES",
+                "MEDIODIA"
+              ]
+            },
+            {
+              "id": "responsable",
+              "excelHeader": "RESPONSABLE",
+              "label": "RESPONSABLE",
+              "type": "enum",
+              "semanticRole": "assignee",
+              "options": [
+                "KATIA",
+                "SASHA",
+                "VICTOR",
+                "ARIAN",
+                "GRAZZY",
+                "MARITZA",
+                "NOE",
+                "MONICA"
+              ]
+            },
+            {
+              "id": "area",
+              "excelHeader": "AREA",
+              "label": "AREA",
+              "type": "enum",
+              "semanticRole": "area",
+              "options": [
+                "ADMINISTATIVO",
+                "FUNCION 5",
+                "PODER JUDICIAL",
+                "COBRANZAS",
+                "SUNAFIL",
+                "FUNCION 6",
+                "PENDIENTE"
+              ]
+            },
+            {
+              "id": "estado",
+              "excelHeader": "ESTADO",
+              "label": "ESTADO",
+              "type": "enum",
+              "semanticRole": "status",
+              "options": [
+                "EN PROGRESO",
+                "PENDIENTE",
+                "EN PROCESO",
+                "ALTA"
+              ]
+            },
+            {
+              "id": "prioridad",
+              "excelHeader": "PRIORIDAD",
+              "label": "PRIORIDAD",
+              "type": "enum",
+              "semanticRole": "priority",
+              "options": [
+                "URGENTE",
+                "MEDIA",
+                "ALTA"
+              ]
+            },
+            {
+              "id": "link",
+              "excelHeader": "LINK",
+              "label": "LINK",
+              "type": "text",
+              "semanticRole": "link"
+            },
+            {
+              "id": "observaciones",
+              "excelHeader": "OBSERVACIONES",
+              "label": "OBSERVACIONES",
+              "type": "longtext",
+              "semanticRole": "notes"
+            }
+          ],
+          "language": "es",
+          "rowCount": 65,
+          "sheetName": "TEMPLO 2",
+          "structure": "records"
+        },
+        "bindings": {
+          "identifier": "n",
+          "client": "cliente",
+          "status": "estado",
+          "priority": "prioridad",
+          "assignee": "responsable",
+          "deadline": "fecha_limite",
+          "description": "descripcion_del_servicio_asunto",
+          "area": "area",
+          "action": "accion",
+          "link": "link",
+          "pm": "responsable_calite",
+          "notes": "observaciones"
+        },
+        "colorMaps": {
+          "status": {
+            "EN PROGRESO": "sky",
+            "PENDIENTE": "amber",
+            "EN PROCESO": "sky",
+            "ALTA": "rose"
+          },
+          "priority": {
+            "URGENTE": "rose",
+            "MEDIA": "indigo",
+            "ALTA": "rose"
+          },
+          "action": {
+            "REVISAR": "slate",
+            "HACER": "slate",
+            "RECORDAR": "slate"
+          },
+          "area": {
+            "ADMINISTATIVO": "slate",
+            "FUNCION 5": "slate",
+            "PODER JUDICIAL": "slate",
+            "COBRANZAS": "slate",
+            "SUNAFIL": "slate",
+            "FUNCION 6": "slate",
+            "PENDIENTE": "amber"
+          }
+        }
+      }
+    ]
+  }
+]

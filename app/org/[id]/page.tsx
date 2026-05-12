@@ -1,0 +1,161 @@
+'use client';
+import { useEffect, useState, use } from 'react';
+import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import { fmtDate } from '@/lib/utils';
+import { useLang, T } from '@/lib/useLang';
+
+interface Project { id: string; name: string; original_filename: string; created_at: string; }
+interface OrgData {
+  org: { id: string; name: string; invite_code: string; drive_folder_url?: string };
+  projects: Project[]; myRole: string;
+}
+
+export default function OrgPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [lang] = useLang();
+  const tx = T[lang];
+  const [data, setData] = useState<OrgData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const router = useRouter();
+  const sb = createClient();
+
+  useEffect(() => {
+    sb.auth.getUser().then(({ data: { user } }) => setUser(user));
+    fetch(`/api/orgs/${id}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.error) { setApiError(d.error); setLoading(false); return; }
+        setData(d); setLoading(false);
+      })
+      .catch(e => { setApiError(String(e)); setLoading(false); });
+  }, [id]);
+
+  async function signOut() {
+    await sb.auth.signOut();
+    router.push('/auth/login');
+  }
+
+  function copyCode() {
+    navigator.clipboard.writeText(data?.org.invite_code ?? '');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  if (loading) return (
+    <Shell user={user} onSignOut={signOut} tx={tx}>
+      <div className="py-20 text-center text-slate-400">Loading…</div>
+    </Shell>
+  );
+
+  if (apiError) return (
+    <Shell user={user} onSignOut={signOut} tx={tx}>
+      <div className="py-20 text-center">
+        <p className="text-rose-500 text-[14px] font-medium mb-2">Failed to load organization</p>
+        <p className="text-slate-400 text-[13px] max-w-sm mx-auto">{apiError}</p>
+      </div>
+    </Shell>
+  );
+
+  if (!data?.org) return (
+    <Shell user={user} onSignOut={signOut} tx={tx}>
+      <div className="py-20 text-center text-slate-400">Organization not found.</div>
+    </Shell>
+  );
+
+  return (
+    <Shell user={user} onSignOut={signOut} tx={tx}>
+      {/* Org header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <Link href="/" className="text-[12px] text-slate-400 hover:text-slate-600 flex items-center gap-1 mb-2 w-fit">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+            {tx.orgsTitle}
+          </Link>
+          <h1 className="text-[22px] font-semibold text-slate-900">{data.org.name}</h1>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[12px] text-slate-400">{tx.inviteCodeLabel}</span>
+            <button onClick={copyCode}
+              className="text-[12px] font-mono font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded hover:bg-indigo-100 transition-colors">
+              {data.org.invite_code}
+            </button>
+            {copied && <span className="text-[11px] text-emerald-600">Copied!</span>}
+          </div>
+        </div>
+        <Link href={`/upload?org=${id}`}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-medium px-4 py-2 rounded-lg transition-colors">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M6.5 1v8M3 6l3.5-3.5L10 6M2 11h9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          {tx.uploadExcel}
+        </Link>
+      </div>
+
+      {data.projects.length === 0 ? (
+        <div className="text-center py-20">
+          <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <svg className="w-8 h-8 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h2 className="text-[17px] font-semibold text-slate-800 mb-2">{tx.noProjects}</h2>
+          <p className="text-[13px] text-slate-500 mb-6 max-w-sm mx-auto">{tx.noProjectsSub}</p>
+          <Link href={`/upload?org=${id}`}
+            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-medium px-5 py-2.5 rounded-lg transition-colors">
+            {tx.firstProject}
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-4">
+          {data.projects.map(p => (
+            <Link key={p.id} href={`/projects/${p.id}`}
+              className="group bg-white rounded-xl border border-black/[0.06] p-5 hover:shadow-md hover:border-indigo-200 transition-all block">
+              <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center mb-3">
+                <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-[14px] font-semibold text-slate-900 mb-1 truncate group-hover:text-indigo-700 transition-colors">{p.name}</h3>
+              <p className="text-[11px] text-slate-400 truncate mb-3">{p.original_filename}</p>
+              <div className="text-[11px] text-slate-400 pt-3 border-t border-black/[0.05]">{fmtDate(p.created_at.slice(0, 10))}</div>
+            </Link>
+          ))}
+          <Link href={`/upload?org=${id}`}
+            className="bg-white rounded-xl border-2 border-dashed border-slate-200 p-5 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all flex flex-col items-center justify-center gap-2 min-h-[160px]">
+            <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            </div>
+            <span className="text-[13px] font-medium text-slate-400">{tx.uploadExcel}</span>
+          </Link>
+        </div>
+      )}
+    </Shell>
+  );
+}
+
+function Shell({ user, onSignOut, tx, children }: { user: any; onSignOut: () => void; tx: typeof T['en'] | typeof T['es']; children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-[#f5f4f0]">
+      <header className="bg-white border-b border-black/[0.06] px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center shadow-sm">
+            <svg viewBox="0 0 18 18" fill="none" className="w-5 h-5">
+              <path d="M5 4l-3 5 3 5M13 4l3 5-3 5M11 3l-4 12" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <Link href="/" className="text-[15px] font-semibold text-slate-900 hover:text-indigo-700 transition-colors">Sheetshift</Link>
+        </div>
+        {user && (
+          <button onClick={onSignOut} className="text-[12px] text-slate-500 hover:text-slate-800 transition-colors">
+            {tx.signOut}
+          </button>
+        )}
+      </header>
+      <div className="max-w-6xl mx-auto px-6 py-10">{children}</div>
+    </div>
+  );
+}

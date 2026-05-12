@@ -311,7 +311,13 @@ export function TimeSeriesView({ section }: { section: SectionWithRecords }) {
   );
 }
 
-// ─── Budget View (Use of Funds) ───────────────────────────────────────────────
+// ─── Budget View (Use of Funds / Grant Budget / Line-item Budget) ─────────────
+function parseAmt(v: unknown): number {
+  if (v == null || v === '') return 0;
+  const n = Number(String(v).replace(/[$,\s]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
 export function BudgetView({ section, onEditRow, onAddRow }: {
   section: SectionWithRecords;
   onEditRow: (row: Row) => void;
@@ -320,26 +326,70 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
   const cols = section.schema.columns;
   const rows = section.records;
 
+  // Smart column detection: find the cost/amount column by label OR by which col has the most numeric values
   const catCol = cols[0];
-  const amtCol = cols.find(c => /amount|cost|\$|monto/i.test(c.label)) ?? cols[1];
-  const pctCol = cols.find(c => /%|percent/i.test(c.label)) ?? cols[2];
-  const purposeCol = cols.find(c => /purpose|description|note|reason/i.test(c.label)) ?? cols[3];
+  const amtCol = (() => {
+    const byLabel = cols.find(c => /amount|cost|\$|monto|price|total/i.test(c.label) && c !== catCol);
+    if (byLabel) return byLabel;
+    // Fall back to the column with the most non-zero numeric values
+    return [...cols].slice(1).sort((a, b) => {
+      const na = rows.filter(r => parseAmt(r[a.id]) !== 0).length;
+      const nb = rows.filter(r => parseAmt(r[b.id]) !== 0).length;
+      return nb - na;
+    })[0] ?? cols[1];
+  })();
+  const pctCol = cols.find(c => /%|percent/i.test(c.label));
+  // Description column: any string col that's not catCol and not amtCol
+  const descCol = cols.find(c => c !== catCol && c !== amtCol && c !== pctCol &&
+    /item|service|descripci|description|purpose|note|reason|detail/i.test(c.label)) ??
+    cols.find(c => c !== catCol && c !== amtCol && c !== pctCol && rows.some(r => typeof r[c.id] === 'string' && String(r[c.id]).length > 2));
 
-  const totalAmt = rows.reduce((s, r) => {
-    const v = Number(r[amtCol?.id] ?? 0);
-    return isNaN(v) ? s : s + v;
+  // Separate section headers from item rows
+  function isSection(row: Row): boolean {
+    const first = String(row[catCol?.id] ?? '').trim();
+    const others = cols.slice(1).map(c => row[c.id]);
+    const allOtherEmpty = others.every(v => v == null || v === '' || parseAmt(v) === 0);
+    return (
+      allOtherEmpty &&
+      first.length > 3 &&
+      first === first.toUpperCase() &&
+      /[A-Z]{2}/.test(first) &&
+      !/^\d+$/.test(first)
+    );
+  }
+
+  // Group rows: section headers become group titles, filter total/gross summary rows
+  type Group = { header: string | null; items: Row[] };
+  const groups: Group[] = [];
+  let cur: Group = { header: null, items: [] };
+
+  for (const row of rows) {
+    const cat = String(row[catCol?.id] ?? '').trim();
+    if (!cat) continue;
+    if (isSection(row)) {
+      if (cur.items.length > 0 || cur.header) groups.push(cur);
+      cur = { header: cat, items: [] };
+    } else {
+      cur.items.push(row);
+    }
+  }
+  if (cur.items.length > 0 || cur.header) groups.push(cur);
+
+  // Total = sum of all positive amounts (use items only, not group headers)
+  const allItems = groups.flatMap(g => g.items);
+  const totalAmt = allItems.reduce((s, r) => {
+    const v = parseAmt(r[amtCol?.id]);
+    return v > 0 ? s + v : s;
   }, 0);
-
-  // Filter out "TOTAL" rows from items list
-  const items = rows.filter(r => !/^total/i.test(String(r[catCol?.id] ?? '')));
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Total card */}
+      {/* Summary card */}
       <div className="rounded-xl p-5 flex items-center justify-between" style={{ background: C.indigoBg, border: `0.5px solid rgba(79,70,229,0.2)` }}>
         <div>
           <div className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: C.indigo }}>Total Budget</div>
           <div className="text-[32px] font-semibold leading-none" style={{ color: C.indigo }}>{fmt(totalAmt, '$')}</div>
+          <div className="text-[12px] mt-1" style={{ color: C.indigo, opacity: 0.7 }}>{allItems.length} items · {groups.length} section{groups.length !== 1 ? 's' : ''}</div>
         </div>
         <button onClick={onAddRow}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold text-white transition-all hover:opacity-90"
@@ -349,46 +399,82 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
         </button>
       </div>
 
-      {/* Item cards */}
-      <div className="flex flex-col gap-2.5">
-        {items.map((row, i) => {
-          const cat = String(row[catCol?.id] ?? '');
-          const amt = Number(row[amtCol?.id] ?? 0);
-          const pct = pctCol
-            ? Number(row[pctCol.id] ?? 0)
-            : totalAmt > 0 ? amt / totalAmt : 0;
-          const pctDisplay = (Math.abs(pct) <= 1 ? pct * 100 : pct).toFixed(1);
-          const purpose = purposeCol ? String(row[purposeCol.id] ?? '') : '';
-          const barPct = totalAmt > 0 ? (amt / totalAmt) * 100 : 0;
-
-          return (
-            <div key={row._id ?? i}
-              onClick={() => onEditRow(row)}
-              className="rounded-xl p-4 cursor-pointer transition-colors"
-              style={{ background: C.bg, border: `0.5px solid ${C.border}` }}
-              onMouseEnter={e => (e.currentTarget.style.background = C.bg2)}
-              onMouseLeave={e => (e.currentTarget.style.background = C.bg)}>
-              <div className="flex items-start justify-between mb-2.5">
-                <div>
-                  <div className="text-[14px] font-semibold" style={{ color: C.text }}>{cat}</div>
-                  {purpose && <div className="text-[12px] mt-0.5 leading-snug" style={{ color: C.text3 }}>{truncate(purpose, 80)}</div>}
-                </div>
-                <div className="text-right flex-shrink-0 ml-4">
-                  <div className="text-[18px] font-semibold" style={{ color: C.text, fontVariantNumeric: 'tabular-nums' }}>
-                    {fmt(amt, '$')}
-                  </div>
-                  <div className="text-[11px] font-medium" style={{ color: C.text3 }}>{pctDisplay}%</div>
-                </div>
-              </div>
-              {/* Progress bar */}
-              <div className="h-1.5 rounded-full" style={{ background: C.bg3 }}>
-                <div className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${barPct}%`, background: CHART_COLORS[i % CHART_COLORS.length] }} />
-              </div>
+      {/* Grouped item cards */}
+      {groups.map((grp, gi) => (
+        <div key={gi} className="flex flex-col gap-0 rounded-xl overflow-hidden" style={{ border: `0.5px solid ${C.border}` }}>
+          {/* Section header */}
+          {grp.header && (
+            <div className="px-5 py-3 flex items-center gap-2" style={{ background: C.indigoBg, borderBottom: `0.5px solid ${C.border}` }}>
+              <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: C.indigo }}>{grp.header}</span>
+              <span className="text-[11px] ml-auto" style={{ color: C.indigo, opacity: 0.7 }}>
+                {fmt(grp.items.reduce((s, r) => s + Math.max(0, parseAmt(r[amtCol?.id])), 0), '$')}
+              </span>
             </div>
-          );
-        })}
-      </div>
+          )}
+
+          {/* Items */}
+          {grp.items.map((row, i) => {
+            const cat = String(row[catCol?.id] ?? '');
+            const rawAmt = parseAmt(row[amtCol?.id]);
+            const desc = descCol ? String(row[descCol.id] ?? '') : '';
+            const pct = pctCol
+              ? parseAmt(row[pctCol.id])
+              : totalAmt > 0 ? rawAmt / totalAmt : 0;
+            const pctDisplay = (Math.abs(pct) <= 1 ? pct * 100 : pct).toFixed(1);
+            const barPct = totalAmt > 0 ? Math.max(0, rawAmt / totalAmt) * 100 : 0;
+            const isNeg = rawAmt < 0;
+            const isTotal = /^(total|subtotal|gross|net)/i.test(cat);
+
+            return (
+              <div key={row._id ?? i}
+                onClick={() => onEditRow(row)}
+                className="cursor-pointer"
+                style={{
+                  background: isTotal ? C.bg2 : C.bg,
+                  borderBottom: i < grp.items.length - 1 ? `0.5px solid ${C.border}` : 'none',
+                  padding: '12px 20px',
+                  fontWeight: isTotal ? 700 : 400,
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = C.bg3)}
+                onMouseLeave={e => (e.currentTarget.style.background = isTotal ? C.bg2 : C.bg)}>
+                <div className="flex items-start justify-between gap-4">
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div className="text-[13px] truncate" style={{ color: C.text, fontWeight: isTotal ? 700 : 500 }}>{cat}</div>
+                    {desc && desc !== cat && (
+                      <div className="text-[11px] mt-0.5 truncate" style={{ color: C.text3 }}>{truncate(desc, 80)}</div>
+                    )}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-[15px] font-semibold" style={{ color: isNeg ? C.red : C.text, fontVariantNumeric: 'tabular-nums' }}>
+                      {isNeg ? `−$${Math.abs(rawAmt).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : fmt(rawAmt, '$')}
+                    </div>
+                    {!isTotal && pctDisplay !== '0.0' && (
+                      <div className="text-[10px]" style={{ color: C.text3 }}>{pctDisplay}%</div>
+                    )}
+                  </div>
+                </div>
+                {/* Progress bar (only for positive non-total items) */}
+                {!isTotal && !isNeg && rawAmt > 0 && (
+                  <div className="mt-2 h-1 rounded-full" style={{ background: C.bg3 }}>
+                    <div className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${barPct}%`, background: CHART_COLORS[gi % CHART_COLORS.length] }} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {grp.items.length === 0 && (
+            <div className="px-5 py-3 text-[12px]" style={{ color: C.text3 }}>No items in this section.</div>
+          )}
+        </div>
+      ))}
+
+      {groups.length === 0 && (
+        <div className="rounded-xl p-8 text-center" style={{ background: C.bg, border: `0.5px solid ${C.border}`, color: C.text3 }}>
+          No budget items found.
+        </div>
+      )}
     </div>
   );
 }
