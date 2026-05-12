@@ -363,8 +363,10 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
   function isNoise(row: Row): boolean {
     const cat = String(row[catCol?.id] ?? '').trim();
     const amt = parseAmt(row[amtCol?.id]);
-    if (!cat) return true;
-    // Pure punctuation / special placeholder (e.g. "#", "-", "—")
+    const desc = descCol ? String(row[descCol.id] ?? '').trim() : '';
+    // Fully empty row
+    if (!cat && !desc && amt === 0) return true;
+    // Pure punctuation / special placeholder (e.g. "#", "–", "-")
     if (/^[#*\-–—/\\.]+$/.test(cat)) return true;
     // Explicit note rows
     if (/^note[s]?:/i.test(cat)) return true;
@@ -373,8 +375,10 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
       String(row[c.id] ?? '').trim().toLowerCase() === c.label.trim().toLowerCase()
     ).length;
     if (headerHits >= 2) return true;
-    // Zero-amount rows that don't look like section headers → preamble / formula / comment
-    if (amt === 0 && !looksLikeHeader(cat)) return true;
+    // Long mixed-case sentence with $0 and no description = preamble/comment text
+    // Only filter if it's clearly a sentence (>60 chars, has spaces, not a numbered item)
+    if (amt === 0 && !looksLikeHeader(cat) && !desc && cat.length > 60 &&
+        /\s/.test(cat) && !/^\d/.test(cat)) return true;
     return false;
   }
 
@@ -382,9 +386,13 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
   function rowTitle(row: Row): { label: string; badge: string | null } {
     const cat = String(row[catCol?.id] ?? '').trim();
     const desc = descCol ? String(row[descCol.id] ?? '').trim() : '';
+    // Numbered row → description is the real label
     if (/^\d{1,4}$/.test(cat) && desc) return { label: desc, badge: cat };
+    // Empty first column → use description as label
     if (!cat && desc) return { label: desc, badge: null };
-    return { label: cat, badge: null };
+    // If cat is short (code/number) and desc is longer → prefer desc
+    if (cat.length <= 4 && desc.length > cat.length) return { label: desc, badge: cat || null };
+    return { label: cat || desc || '—', badge: null };
   }
 
   // ── Build groups ────────────────────────────────────────────────────────────
@@ -406,24 +414,23 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
   const filledGroups = groups.filter(g => g.items.length > 0);
 
   const allItems = filledGroups.flatMap(g => g.items);
-  // Total = sum of leaf items only (skip subtotal rows to avoid double-counting)
   const isSubtotalLabel = (label: string) =>
-    /\bsubtotal\b/i.test(label) || /\btotal\s*$/.test(label) ||
-    /\bsubtotal\b|\btotal\s+claimed\b|\bgrand\s+total\b/i.test(label);
+    /\bsubtotal\b/i.test(label) ||
+    /\btotal\s+claimed\b|\bgrand\s+total\b/i.test(label);
 
-  const leafItems = allItems.filter(r => {
-    const { label } = (() => {
-      const cat = String(r[catCol?.id] ?? '').trim();
-      const desc = descCol ? String(r[descCol.id] ?? '').trim() : '';
-      if (/^\d{1,4}$/.test(cat) && desc) return { label: desc };
-      return { label: cat };
-    })();
-    return !isSubtotalLabel(label);
+  // Total = highest-level amount in the sheet — use the grand total row if present,
+  // otherwise sum all leaf (non-subtotal) items to avoid double-counting.
+  const grandTotalRow = allItems.find(r => {
+    const { label } = rowTitle(r);
+    return /\bgrand\s+total\b|\bfull\s+net\s+budget\b|\btotal\s+budget\b/i.test(label);
   });
-  const totalAmt = leafItems.reduce((s, r) => {
-    const v = parseAmt(r[amtCol?.id]);
-    return v > 0 ? s + v : s;
-  }, 0);
+  const totalAmt = grandTotalRow
+    ? parseAmt(grandTotalRow[amtCol?.id])
+    : allItems
+        .filter(r => !isSubtotalLabel(rowTitle(r).label))
+        .reduce((s, r) => { const v = parseAmt(r[amtCol?.id]); return v > 0 ? s + v : s; }, 0);
+
+  const leafCount = allItems.filter(r => !isSubtotalLabel(rowTitle(r).label)).length;
 
   const fmtMoney = (n: number) =>
     (n < 0 ? '−' : '') +
@@ -438,7 +445,7 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
           <div className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: C.indigo }}>Total Budget</div>
           <div className="text-[30px] font-semibold leading-none tabular-nums" style={{ color: C.indigo }}>{fmtMoney(totalAmt)}</div>
           <div className="text-[11px] mt-1.5" style={{ color: C.indigo, opacity: 0.65 }}>
-            {leafItems.length} item{leafItems.length !== 1 ? 's' : ''} across {filledGroups.length} group{filledGroups.length !== 1 ? 's' : ''}
+            {leafCount} item{leafCount !== 1 ? 's' : ''} across {filledGroups.length} group{filledGroups.length !== 1 ? 's' : ''}
           </div>
         </div>
         <button onClick={onAddRow}
@@ -454,15 +461,13 @@ export function BudgetView({ section, onEditRow, onAddRow }: {
       {/* ── Groups ── */}
       {filledGroups.map((grp, gi) => {
         const color = CHART_COLORS[gi % CHART_COLORS.length];
-        // Section total = sum of leaf (non-subtotal) items in this group
-        const grpLeafAmt = grp.items
-          .filter(r => {
-            const cat = String(r[catCol?.id] ?? '').trim();
-            const desc = descCol ? String(r[descCol.id] ?? '').trim() : '';
-            const lbl = /^\d{1,4}$/.test(cat) && desc ? desc : cat;
-            return !isSubtotalLabel(lbl);
-          })
-          .reduce((s, r) => s + Math.max(0, parseAmt(r[amtCol?.id])), 0);
+        // Section total: prefer explicit subtotal row if present, else sum leaf items
+        const subRow = grp.items.find(r => isSubtotalLabel(rowTitle(r).label));
+        const grpLeafAmt = subRow
+          ? parseAmt(subRow[amtCol?.id])
+          : grp.items
+              .filter(r => !isSubtotalLabel(rowTitle(r).label))
+              .reduce((s, r) => s + Math.max(0, parseAmt(r[amtCol?.id])), 0);
 
         return (
           <div key={gi} className="rounded-xl overflow-hidden" style={{ border: `0.5px solid ${C.border}` }}>
