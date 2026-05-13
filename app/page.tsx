@@ -19,6 +19,9 @@ export default function HomePage() {
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
+  const [deletingOrg, setDeletingOrg] = useState<Org | null>(null);
+  const [deleteOrgStep, setDeleteOrgStep] = useState<'confirm' | 'deleting'>('confirm');
+  const [deleteOrgError, setDeleteOrgError] = useState<string | null>(null);
   const router = useRouter();
   const sb = createClient();
 
@@ -33,6 +36,19 @@ export default function HomePage() {
   async function signOut() {
     await sb.auth.signOut();
     router.push('/auth/login');
+  }
+
+  async function doDeleteOrg() {
+    if (!deletingOrg) return;
+    setDeleteOrgStep('deleting'); setDeleteOrgError(null);
+    try {
+      const res = await fetch(`/api/orgs/${deletingOrg.id}`, { method: 'DELETE' });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      setOrgs(prev => prev.filter(o => o.id !== deletingOrg.id));
+      setDeletingOrg(null); setDeleteOrgStep('confirm');
+    } catch (e) {
+      setDeleteOrgError(String(e)); setDeleteOrgStep('confirm');
+    }
   }
 
   async function deleteAccount() {
@@ -103,6 +119,38 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Delete org modal */}
+      {deletingOrg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+            <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center mx-auto mb-4">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" className="text-rose-500">
+                <path d="M11 7v5M11 15h.01M21 11a10 10 0 11-20 0 10 10 0 0120 0z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <h2 className="text-[16px] font-semibold text-slate-900 text-center mb-1">Delete organization?</h2>
+            <p className="text-[13px] text-slate-500 text-center mb-1">
+              <span className="font-medium text-slate-700">{deletingOrg.name}</span>
+            </p>
+            <p className="text-[12px] text-slate-400 text-center mb-5">
+              This permanently deletes the organization and all its projects and data. This cannot be undone.
+            </p>
+            {deleteOrgError && <p className="text-[12px] text-rose-500 text-center mb-3">{deleteOrgError}</p>}
+            <div className="flex flex-col gap-2">
+              <button onClick={doDeleteOrg} disabled={deleteOrgStep === 'deleting'}
+                className="w-full py-2.5 rounded-lg text-[13px] font-semibold text-white bg-rose-600 hover:bg-rose-700 transition-colors disabled:opacity-50">
+                {deleteOrgStep === 'deleting' ? 'Deleting…' : 'Yes, delete organization'}
+              </button>
+              <button onClick={() => { setDeletingOrg(null); setDeleteOrgStep('confirm'); setDeleteOrgError(null); }}
+                disabled={deleteOrgStep === 'deleting'}
+                className="w-full py-2.5 rounded-lg text-[13px] font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-50">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -151,23 +199,34 @@ export default function HomePage() {
         {!loading && orgs.length > 0 && (
           <div className="grid grid-cols-3 gap-4">
             {orgs.map(org => (
-              <Link key={org.id} href={`/org/${org.id}`}
-                className="group bg-white rounded-xl border border-black/[0.06] p-5 hover:shadow-md hover:border-indigo-200 transition-all block">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-[15px] font-bold text-indigo-600">
-                    {org.name.charAt(0).toUpperCase()}
+              <div key={org.id} className="relative group">
+                <Link href={`/org/${org.id}`}
+                  className="bg-white rounded-xl border border-black/[0.06] p-5 hover:shadow-md hover:border-indigo-200 transition-all block">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-[15px] font-bold text-indigo-600">
+                      {org.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      org.role === 'owner' ? 'bg-indigo-50 text-indigo-700' :
+                      org.role === 'admin' ? 'bg-violet-50 text-violet-700' :
+                      'bg-slate-100 text-slate-600'
+                    }`}>
+                      {org.role === 'owner' ? 'Owner' : org.role === 'admin' ? 'Admin' : 'Member'}
+                    </span>
                   </div>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                    org.role === 'owner' ? 'bg-indigo-50 text-indigo-700' :
-                    org.role === 'admin' ? 'bg-violet-50 text-violet-700' :
-                    'bg-slate-100 text-slate-600'
-                  }`}>
-                    {org.role === 'owner' ? 'Owner' : org.role === 'admin' ? 'Admin' : 'Member'}
-                  </span>
-                </div>
-                <h3 className="text-[15px] font-semibold text-slate-900 mb-0.5 group-hover:text-indigo-700 transition-colors truncate">{org.name}</h3>
-                <p className="text-[11px] text-slate-400 font-mono">{org.invite_code}</p>
-              </Link>
+                  <h3 className="text-[15px] font-semibold text-slate-900 mb-0.5 group-hover:text-indigo-700 transition-colors truncate">{org.name}</h3>
+                  <p className="text-[11px] text-slate-400 font-mono">{org.invite_code}</p>
+                </Link>
+                {org.role === 'owner' && (
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingOrg(org); setDeleteOrgStep('confirm'); setDeleteOrgError(null); }}
+                    className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 transition-opacity bg-rose-50 hover:bg-rose-100 text-rose-400 hover:text-rose-600">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <path d="M2 3.5h9M5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M3.5 3.5l.5 7h5l.5-7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
             ))}
 
             <Link href="/onboarding"
