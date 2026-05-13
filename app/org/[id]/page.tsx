@@ -24,6 +24,9 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const [deleteStep, setDeleteStep] = useState<'confirm' | 'deleting'>('confirm');
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletingOrg, setDeletingOrg] = useState(false);
+  const [deleteOrgStep, setDeleteOrgStep] = useState<'confirm' | 'deleting'>('confirm');
+  const [deleteOrgError, setDeleteOrgError] = useState<string | null>(null);
   const router = useRouter();
   const sb = createClient();
 
@@ -58,6 +61,17 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
     a.download = filename.replace(/\.[^.]+$/, '') + '_updated.xlsx';
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function doDeleteOrg() {
+    setDeleteOrgStep('deleting'); setDeleteOrgError(null);
+    try {
+      const res = await fetch(`/api/orgs/${id}`, { method: 'DELETE' });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      router.push('/');
+    } catch (e) {
+      setDeleteOrgError(String(e)); setDeleteOrgStep('confirm');
+    }
   }
 
   async function doDeleteProject(downloadFirst: boolean) {
@@ -97,6 +111,38 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
 
   return (
     <Shell user={user} onSignOut={signOut} tx={tx}>
+      {/* Delete org modal */}
+      {deletingOrg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+            <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center mx-auto mb-4">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" className="text-rose-500">
+                <path d="M11 7v5M11 15h.01M21 11a10 10 0 11-20 0 10 10 0 0120 0z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <h2 className="text-[16px] font-semibold text-slate-900 text-center mb-1">Delete organization?</h2>
+            <p className="text-[13px] text-slate-500 text-center mb-1">
+              <span className="font-medium text-slate-700">{data?.org.name}</span>
+            </p>
+            <p className="text-[12px] text-slate-400 text-center mb-5">
+              This will permanently delete the organization and all its projects and data. This cannot be undone.
+            </p>
+            {deleteOrgError && <p className="text-[12px] text-rose-500 text-center mb-3">{deleteOrgError}</p>}
+            <div className="flex flex-col gap-2">
+              <button onClick={doDeleteOrg} disabled={deleteOrgStep === 'deleting'}
+                className="w-full py-2.5 rounded-lg text-[13px] font-semibold text-white bg-rose-600 hover:bg-rose-700 transition-colors disabled:opacity-50">
+                {deleteOrgStep === 'deleting' ? 'Deleting…' : 'Yes, delete organization'}
+              </button>
+              <button onClick={() => { setDeletingOrg(false); setDeleteOrgStep('confirm'); setDeleteOrgError(null); }}
+                disabled={deleteOrgStep === 'deleting'}
+                className="w-full py-2.5 rounded-lg text-[13px] font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-50">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete project modal */}
       {deletingProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -150,13 +196,24 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
             {copied && <span className="text-[11px] text-emerald-600">Copied!</span>}
           </div>
         </div>
-        <Link href={`/upload?org=${id}`}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-medium px-4 py-2 rounded-lg transition-colors">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-            <path d="M6.5 1v8M3 6l3.5-3.5L10 6M2 11h9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          {tx.uploadExcel}
-        </Link>
+        <div className="flex items-center gap-2">
+          {data.myRole === 'owner' && (
+            <button onClick={() => { setDeletingOrg(true); setDeleteOrgStep('confirm'); setDeleteOrgError(null); }}
+              className="flex items-center gap-1.5 text-[13px] font-medium text-rose-500 hover:text-rose-700 px-3 py-2 rounded-lg hover:bg-rose-50 transition-colors">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M2 3.5h9M5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M3.5 3.5l.5 7h5l.5-7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Delete org
+            </button>
+          )}
+          <Link href={`/upload?org=${id}`}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-medium px-4 py-2 rounded-lg transition-colors">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path d="M6.5 1v8M3 6l3.5-3.5L10 6M2 11h9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            {tx.uploadExcel}
+          </Link>
+        </div>
       </div>
 
       {data.projects.length === 0 ? (

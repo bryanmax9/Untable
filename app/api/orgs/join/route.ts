@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
+
+function adminClient() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } },
+  );
+}
 
 export async function POST(req: NextRequest) {
   const sb = await createClient();
@@ -11,7 +20,9 @@ export async function POST(req: NextRequest) {
   const { code } = await req.json();
   if (!code?.trim()) return NextResponse.json({ error: 'Code required' }, { status: 400 });
 
-  const { data: org, error: orgErr } = await sb
+  // Must use service role: the orgs_select RLS policy only allows users to see orgs
+  // they already belong to, so a non-member can't look up an org by invite_code.
+  const { data: org, error: orgErr } = await adminClient()
     .from('organizations')
     .select('id, name')
     .eq('invite_code', code.trim().toUpperCase())
@@ -19,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   if (orgErr || !org) return NextResponse.json({ error: 'Invalid invite code' }, { status: 404 });
 
-  // Check already a member
+  // Check already a member (user can see their own row — safe with user-level client)
   const { data: existing } = await sb
     .from('org_members')
     .select('id')
@@ -27,7 +38,7 @@ export async function POST(req: NextRequest) {
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (existing) return NextResponse.json(org); // already member — just redirect
+  if (existing) return NextResponse.json(org);
 
   const { error: joinErr } = await sb
     .from('org_members')

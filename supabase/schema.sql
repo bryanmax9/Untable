@@ -104,6 +104,7 @@ alter table public.records       enable row level security;
 drop policy if exists "orgs_select"     on public.organizations;
 drop policy if exists "orgs_insert"     on public.organizations;
 drop policy if exists "orgs_update"     on public.organizations;
+drop policy if exists "orgs_delete"     on public.organizations;
 drop policy if exists "members_select"  on public.org_members;
 drop policy if exists "members_insert"  on public.org_members;
 drop policy if exists "members_delete"  on public.org_members;
@@ -152,6 +153,15 @@ create policy "orgs_update" on public.organizations for update using (
   )
 );
 
+create policy "orgs_delete" on public.organizations for delete using (
+  exists (
+    select 1 from public.org_members om
+    where om.org_id = organizations.id
+      and om.user_id = (select auth.uid())
+      and om.role = 'owner'
+  )
+);
+
 -- ── projects policies ─────────────────────────────────────────
 -- Projects with an org_id: accessible to org members
 -- Projects without an org_id: accessible to the creator only
@@ -188,12 +198,18 @@ create policy "projects_update" on public.projects for update using (
 );
 
 -- ── sections policies ─────────────────────────────────────────
+-- Covers both org projects (via org_members) and personal projects (via created_by)
 create policy "sections_all" on public.sections for all using (
   exists (
     select 1 from public.projects p
-    join public.org_members om on om.org_id = p.org_id
     where p.id = sections.project_id
-      and om.user_id = (select auth.uid())
+      and (
+        p.created_by = (select auth.uid())
+        or (p.org_id is not null and exists (
+          select 1 from public.org_members om
+          where om.org_id = p.org_id and om.user_id = (select auth.uid())
+        ))
+      )
   )
 );
 
@@ -202,9 +218,14 @@ create policy "records_all" on public.records for all using (
   exists (
     select 1 from public.sections s
     join public.projects p on p.id = s.project_id
-    join public.org_members om on om.org_id = p.org_id
     where s.id = records.section_id
-      and om.user_id = (select auth.uid())
+      and (
+        p.created_by = (select auth.uid())
+        or (p.org_id is not null and exists (
+          select 1 from public.org_members om
+          where om.org_id = p.org_id and om.user_id = (select auth.uid())
+        ))
+      )
   )
 );
 

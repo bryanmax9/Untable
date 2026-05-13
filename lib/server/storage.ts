@@ -71,7 +71,7 @@ function sectionRow(s: any): ProjectSection {
 export async function saveProject(project: StoredProject, userId?: string): Promise<void> {
   const client = sb();
 
-  await client.from('projects').upsert({
+  const { error: projErr } = await client.from('projects').upsert({
     id:                project.id,
     org_id:            project.orgId ?? null,
     name:              project.name,
@@ -79,18 +79,20 @@ export async function saveProject(project: StoredProject, userId?: string): Prom
     created_by:        userId ?? null,
     created_at:        project.createdAt,
   }, { onConflict: 'id' });
+  if (projErr) throw new Error(`Failed to save project: ${projErr.message}`);
 
   for (let i = 0; i < project.sections.length; i++) {
     const sec = project.sections[i];
-    await client.from('sections').upsert({
+    const { error: secErr } = await client.from('sections').upsert({
       project_id:      project.id,
       section_idx:     i,
       sheet_name:      sec.sheetName,
       domain:          sec.domain,
-      schema_json:     sec.schema,
-      bindings_json:   sec.bindings,
-      color_maps_json: sec.colorMaps,
+      schema_json:     sec.schema ?? {},
+      bindings_json:   sec.bindings ?? {},
+      color_maps_json: sec.colorMaps ?? {},
     }, { onConflict: 'project_id,section_idx' });
+    if (secErr) throw new Error(`Failed to save section ${i}: ${secErr.message}`);
   }
 }
 
