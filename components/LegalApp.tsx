@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import type { StoredProject, ProjectSection, Row, Bindings } from '@/lib/types';
+import type { StoredProject, ProjectSection, Row, Bindings, Column } from '@/lib/types';
 import { cn, initials, fmtDate, daysUntil, truncate } from '@/lib/utils';
 import { DriveFolderPickerModal } from '@/components/DriveFolderPickerModal';
 
@@ -431,6 +431,111 @@ function PanelView({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DynamicField — renders any schema column with the right input control
+// ─────────────────────────────────────────────────────────────────────────────
+function DynamicField({
+  col, value, onChange, onPickDrive,
+}: {
+  col: Column;
+  value: string;
+  onChange: (v: string) => void;
+  onPickDrive?: () => void;
+}) {
+  const label = col.label || col.excelHeader;
+  const isUrl = col.type === 'url' || col.semanticRole === 'link';
+
+  // Enum → pill buttons (works for any set of options from any sheet)
+  if (col.type === 'enum' && col.options?.length) {
+    return (
+      <div>
+        <div className="la-ep-label">{label}</div>
+        <div className="la-pill-sel">
+          {col.options.map(opt => (
+            <button key={opt} type="button"
+              className={`la-pill-opt ${value === opt ? 'active' : ''}`}
+              onClick={() => onChange(opt)}>
+              {opt}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Boolean → Yes/No toggle
+  if (col.type === 'boolean') {
+    const checked = /^(true|1|s[íi]|yes|sí)$/i.test(value);
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="la-ep-label" style={{ margin: 0 }}>{label}</div>
+        <button type="button" onClick={() => onChange(checked ? 'No' : 'Sí')}
+          style={{ padding: '3px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer',
+            background: checked ? '#3C3489' : '#eee', color: checked ? '#fff' : '#555' }}>
+          {checked ? 'Sí' : 'No'}
+        </button>
+      </div>
+    );
+  }
+
+  // Long text → textarea
+  if (col.type === 'longtext') {
+    return (
+      <div>
+        <div className="la-ep-label">{label}</div>
+        <textarea className="la-ep-textarea" rows={3} value={value} onChange={e => onChange(e.target.value)} />
+      </div>
+    );
+  }
+
+  // URL / link → text input + optional Drive picker button
+  if (isUrl) {
+    return (
+      <div>
+        <div className="la-ep-label">{label}</div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <input className="la-ep-input" style={{ flex: 1 }} type="url"
+            value={value} onChange={e => onChange(e.target.value)} placeholder="https://…" />
+          {onPickDrive && (
+            <button type="button" onClick={onPickDrive}
+              style={{ flexShrink: 0, padding: '0 10px', borderRadius: 8, border: '0.5px solid rgba(99,102,241,0.4)', background: '#EEF2FF', color: '#4F46E5', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              📁 Browse
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Date
+  if (col.type === 'date' || col.type === 'datetime') {
+    return (
+      <div>
+        <div className="la-ep-label">{label}</div>
+        <input className="la-ep-input" type="date" value={value?.slice(0, 10) ?? ''} onChange={e => onChange(e.target.value)} />
+      </div>
+    );
+  }
+
+  // Number / currency
+  if (col.type === 'number' || col.type === 'currency') {
+    return (
+      <div>
+        <div className="la-ep-label">{label}</div>
+        <input className="la-ep-input" type="number" value={value} onChange={e => onChange(e.target.value)} />
+      </div>
+    );
+  }
+
+  // Default: text input
+  return (
+    <div>
+      <div className="la-ep-label">{label}</div>
+      <input className="la-ep-input" type="text" value={value} onChange={e => onChange(e.target.value)} />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Edit slide-over panel
 // ─────────────────────────────────────────────────────────────────────────────
 function EditPanel({
@@ -445,39 +550,20 @@ function EditPanel({
   onClose: () => void;
   onSaved: (updated: Row) => void;
 }) {
-  const cols  = section.schema.columns;
-  const b     = section.bindings;
+  const cols = section.schema.columns;
 
-  const statusColId   = b.status;
-  const priorityColId = b.priority;
-  const deadlineColId = b.deadline;
-  const assigneeColId = b.assignee;
-  const pmColId       = b.pm;
-  const areaColId     = b.area;
-  const actionColId   = b.action;
-  const linkColId     = b.link;
-  const notesColId    = b.notes;
-  const hechosColId   = cols.find(c => c.id.includes('hechos'))?.id;
-  const procColId     = cols.find(c => c.id.includes('procedimiento'))?.id;
-  const horarioColId  = cols.find(c => c.id.includes('horario'))?.id;
-
-  const [draft, setDraft] = useState<Record<string, string>>({
-    [statusColId ?? '']:   caso.status,
-    [priorityColId ?? '']: caso.priority,
-    [deadlineColId ?? '']: caso.deadline,
-    [assigneeColId ?? '']: caso.assignee,
-    [pmColId ?? '']:       caso.pm,
-    [areaColId ?? '']:     caso.area,
-    [actionColId ?? '']:   caso.action,
-    [horarioColId ?? '']:  caso.horario,
-    [linkColId ?? '']:     caso.link,
-    [notesColId ?? '']:    caso.notes,
-    [hechosColId ?? '']:   caso.hechos,
-    [procColId ?? '']:     caso.procedimiento,
+  // Init from the raw row so ALL columns are captured, not just the bound ones
+  const rawRow: Row = section.records.find(r => r._id === caso._id) ?? { _id: '' };
+  const [draft, setDraft] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    for (const col of cols) {
+      init[col.id] = String(rawRow[col.id] ?? '');
+    }
+    return init;
   });
-  const [saving, setSaving]           = useState(false);
-  const [error, setError]             = useState<string | null>(null);
-  const [showDrivePicker, setShowDP]  = useState(false);
+  const [saving, setSaving]          = useState(false);
+  const [error, setError]            = useState<string | null>(null);
+  const [showDrivePicker, setShowDP] = useState(false);
 
   const set = (id: string | undefined, v: string) => {
     if (!id) return;
@@ -497,70 +583,18 @@ function EditPanel({
       if (!res.ok) throw new Error(data.error);
       onSaved(data);
 
-      // Non-blocking write-back to Google Sheet
       if (spreadsheetId) {
         fetch('/api/projects/sync-record', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ projectId, recordId: caso._id, patch: body }),
-        }).catch(() => {}); // fire-and-forget
+        }).catch(() => {});
       }
     } catch (e) {
       setError(String(e));
     } finally {
       setSaving(false);
     }
-  }
-
-  const statusCol  = cols.find(c => c.id === statusColId);
-  const priorityCol = cols.find(c => c.id === priorityColId);
-  const STATUS_OPTS   = statusCol?.options?.length   ? statusCol.options   : ['EN PROGRESO', 'PENDIENTE', 'EN PROCESO', 'ALTA', 'URGENTE'];
-  const PRIORITY_OPTS = priorityCol?.options?.length ? priorityCol.options : ['URGENTE', 'ALTA', 'MEDIA', 'BAJA'];
-
-  function PillSel({ label, opts, colId }: { label: string; opts: string[]; colId: string | undefined }) {
-    if (!colId) return null;
-    const current = draft[colId] ?? '';
-    return (
-      <div>
-        <div className="la-ep-label">{label}</div>
-        <div className="la-pill-sel">
-          {opts.map(opt => (
-            <button key={opt} type="button"
-              className={`la-pill-opt ${current === opt ? 'active' : ''}`}
-              onClick={() => set(colId, opt)}>
-              {opt}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  function Field({ label, colId, type = 'text', rows }: {
-    label: string; colId: string | undefined; type?: string; rows?: number;
-  }) {
-    if (!colId) return null;
-    const val = draft[colId] ?? '';
-    return (
-      <div>
-        <div className="la-ep-label">{label}</div>
-        {type === 'textarea' ? (
-          <textarea
-            className="la-ep-textarea"
-            rows={rows ?? 3}
-            value={val}
-            onChange={e => set(colId, e.target.value)}
-          />
-        ) : (
-          <input
-            className="la-ep-input"
-            type={type}
-            value={val}
-            onChange={e => set(colId, e.target.value)}
-          />
-        )}
-      </div>
-    );
   }
 
   return (
@@ -589,44 +623,27 @@ function EditPanel({
           </button>
         </div>
 
-        {/* Body */}
+        {/* Body — fully dynamic: every column from the sheet is rendered */}
         <div className="la-ep-body">
-          <PillSel label="Estado"    opts={STATUS_OPTS}   colId={statusColId} />
-          <PillSel label="Prioridad" opts={PRIORITY_OPTS} colId={priorityColId} />
-          <Field label="Fecha límite"       colId={deadlineColId} type="date" />
-          <div className="la-ep-row2">
-            <Field label="Responsable"        colId={assigneeColId} />
-            <Field label="Responsable Calité" colId={pmColId} />
-          </div>
-          <div className="la-ep-row2">
-            <Field label="Área"    colId={areaColId} />
-            <Field label="Acción"  colId={actionColId} />
-          </div>
-          <Field label="Horario"           colId={horarioColId} />
-          {/* Link expediente — Drive folder picker */}
-          {linkColId && (
-            <div>
-              <div className="la-ep-label">Link expediente</div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input className="la-ep-input" style={{ flex: 1 }}
-                  value={draft[linkColId] ?? ''} onChange={e => set(linkColId, e.target.value)}
-                  placeholder="URL Drive o referencia" />
-                <button type="button" onClick={() => setShowDP(true)}
-                  style={{ flexShrink: 0, padding: '0 10px', borderRadius: 8, border: '0.5px solid rgba(99,102,241,0.4)', background: '#EEF2FF', color: '#4F46E5', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                  📁 Browse
-                </button>
-              </div>
-            </div>
-          )}
+          {cols.map(col => (
+            <DynamicField
+              key={col.id}
+              col={col}
+              value={draft[col.id] ?? ''}
+              onChange={v => set(col.id, v)}
+              onPickDrive={(col.type === 'url' || col.semanticRole === 'link') ? () => setShowDP(true) : undefined}
+            />
+          ))}
           {showDrivePicker && (
             <DriveFolderPickerModal
               onClose={() => setShowDP(false)}
-              onSelect={(url) => { set(linkColId, url); setShowDP(false); }}
+              onSelect={(url) => {
+                const linkCol = cols.find(c => c.semanticRole === 'link' || c.type === 'url');
+                if (linkCol) set(linkCol.id, url);
+                setShowDP(false);
+              }}
             />
           )}
-          <Field label="Observaciones"     colId={notesColId} type="textarea" rows={3} />
-          <Field label="Hechos"            colId={hechosColId} type="textarea" rows={4} />
-          <Field label="Procedimiento"     colId={procColId} type="textarea" rows={4} />
           {error && (
             <div style={{ background: '#FCEBEB', color: '#791F1F', fontSize: 12, borderRadius: 6, padding: '8px 12px' }}>
               {error}
@@ -2181,16 +2198,10 @@ function NewCaseModal({ section, sectionIdx, projectId, onClose, onAdded }: {
   section: SectionWithRecords; sectionIdx: number; projectId: string;
   onClose: () => void; onAdded: (c: LegalCase) => void;
 }) {
-  const b    = section.bindings;
   const cols = section.schema.columns;
-  const statusCol2   = cols.find(c => c.id === b.status);
-  const priorityCol2 = cols.find(c => c.id === b.priority);
-  const STATUS_OPTS2   = statusCol2?.options?.length   ? statusCol2.options   : ['PENDIENTE','EN PROCESO','EN PROGRESO','ALTA','URGENTE'];
-  const PRIORITY_OPTS2 = priorityCol2?.options?.length ? priorityCol2.options : ['URGENTE','ALTA','MEDIA','BAJA'];
-
-  const [vals, setVals]             = useState<Record<string, string>>({});
-  const [saving, setSaving]         = useState(false);
-  const [error, setError]           = useState<string | null>(null);
+  const [vals, setVals]              = useState<Record<string, string>>({});
+  const [saving, setSaving]          = useState(false);
+  const [error, setError]            = useState<string | null>(null);
   const [showDrivePicker, setShowDP] = useState(false);
 
   const set = (k: string, v: string) => setVals(p => ({ ...p, [k]: v }));
@@ -2198,24 +2209,17 @@ function NewCaseModal({ section, sectionIdx, projectId, onClose, onAdded }: {
   async function save() {
     setSaving(true); setError(null);
     try {
+      // Send ALL column values directly — no role mapping needed
       const body: Record<string, string> = {};
-      Object.entries(b).forEach(([role, colId]) => { if (vals[role] !== undefined) body[colId] = vals[role]; });
-      // Extra fields
-      const hechosCol = section.schema.columns.find(c => c.id.includes('hechos'));
-      const procCol   = section.schema.columns.find(c => c.id.includes('procedimiento'));
-      const horCol    = section.schema.columns.find(c => c.id.includes('horario'));
-      const carpCol   = section.schema.columns.find(c => c.id === 'carpeta');
-      if (hechosCol && vals.hechos)       body[hechosCol.id] = vals.hechos;
-      if (procCol   && vals.procedimiento) body[procCol.id]   = vals.procedimiento;
-      if (horCol    && vals.horario)       body[horCol.id]    = vals.horario;
-      if (carpCol   && vals.carpeta)       body[carpCol.id]   = vals.carpeta;
-
+      for (const col of cols) {
+        if (vals[col.id] !== undefined && vals[col.id] !== '') body[col.id] = vals[col.id];
+      }
       const res = await fetch(`/api/projects/${projectId}/records?section=${sectionIdx}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      onAdded(rowToCase(data, b, section));
+      onAdded(rowToCase(data, section.bindings, section));
       onClose();
     } catch (e) { setError(String(e)); }
     finally { setSaving(false); }
@@ -2232,82 +2236,26 @@ function NewCaseModal({ section, sectionIdx, projectId, onClose, onAdded }: {
           </div>
           <button className="la-btn la-btn-sm" onClick={onClose} style={{ flexShrink: 0 }}>✕</button>
         </div>
+        {/* Body — fully dynamic: every column from the sheet rendered by its type */}
         <div className="la-ep-body">
-          {b.description && (
-            <div><div className="la-ep-label">Descripción / Asunto</div>
-              <textarea className="la-ep-textarea" rows={3} value={vals.description ?? ''} onChange={e => set('description', e.target.value)} placeholder="Descripción del servicio…" /></div>
-          )}
-          {b.client && (
-            <div><div className="la-ep-label">Cliente</div>
-              <input className="la-ep-input" value={vals.client ?? ''} onChange={e => set('client', e.target.value)} placeholder="Nombre del cliente" /></div>
-          )}
-          <div><div className="la-ep-label">Carpeta / Tipo</div>
-            <input className="la-ep-input" value={vals.carpeta ?? ''} onChange={e => set('carpeta', e.target.value)} placeholder="RNP, ARBITRAJE, SERVICIOS GENERALES…" /></div>
-          {b.status && (
-            <div><div className="la-ep-label">Estado</div>
-              <div className="la-pill-sel">
-                {STATUS_OPTS2.map(s => (
-                  <button key={s} className={`la-pill-opt ${vals.status === s ? 'active' : ''}`} onClick={() => set('status', s)}>{s}</button>
-                ))}
-              </div>
-            </div>
-          )}
-          {b.priority && (
-            <div><div className="la-ep-label">Prioridad</div>
-              <div className="la-pill-sel">
-                {PRIORITY_OPTS2.map(p => (
-                  <button key={p} className={`la-pill-opt ${vals.priority === p ? 'active' : ''}`} onClick={() => set('priority', p)}>{p}</button>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="la-ep-row2">
-            {b.assignee && (
-              <div><div className="la-ep-label">Responsable</div>
-                <input className="la-ep-input" value={vals.assignee ?? ''} onChange={e => set('assignee', e.target.value)} /></div>
-            )}
-            {b.pm && (
-              <div><div className="la-ep-label">Resp. Calité</div>
-                <input className="la-ep-input" value={vals.pm ?? ''} onChange={e => set('pm', e.target.value)} /></div>
-            )}
-          </div>
-          <div className="la-ep-row2">
-            {b.deadline && (
-              <div><div className="la-ep-label">Fecha límite</div>
-                <input className="la-ep-input" type="date" value={vals.deadline ?? ''} onChange={e => set('deadline', e.target.value)} /></div>
-            )}
-            {b.area && (
-              <div><div className="la-ep-label">Área</div>
-                <input className="la-ep-input" value={vals.area ?? ''} onChange={e => set('area', e.target.value)} /></div>
-            )}
-          </div>
-          {b.action && (
-            <div><div className="la-ep-label">Acción</div>
-              <input className="la-ep-input" value={vals.action ?? ''} onChange={e => set('action', e.target.value)} placeholder="REVISAR, RECORDAR…" /></div>
-          )}
-          {b.link && (
-            <div>
-              <div className="la-ep-label">Link expediente</div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input className="la-ep-input" style={{ flex: 1 }}
-                  value={vals.link ?? ''} onChange={e => set('link', e.target.value)}
-                  placeholder="URL Drive o referencia" />
-                <button type="button" onClick={() => setShowDP(true)}
-                  style={{ flexShrink: 0, padding: '0 10px', borderRadius: 8, border: '0.5px solid rgba(99,102,241,0.4)', background: '#EEF2FF', color: '#4F46E5', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                  📁 Browse
-                </button>
-              </div>
-              {showDrivePicker && (
-                <DriveFolderPickerModal
-                  onClose={() => setShowDP(false)}
-                  onSelect={(url) => { set('link', url); setShowDP(false); }}
-                />
-              )}
-            </div>
-          )}
-          {b.notes && (
-            <div><div className="la-ep-label">Observaciones</div>
-              <textarea className="la-ep-textarea" rows={3} value={vals.notes ?? ''} onChange={e => set('notes', e.target.value)} /></div>
+          {cols.map(col => (
+            <DynamicField
+              key={col.id}
+              col={col}
+              value={vals[col.id] ?? ''}
+              onChange={v => set(col.id, v)}
+              onPickDrive={(col.type === 'url' || col.semanticRole === 'link') ? () => setShowDP(true) : undefined}
+            />
+          ))}
+          {showDrivePicker && (
+            <DriveFolderPickerModal
+              onClose={() => setShowDP(false)}
+              onSelect={(url) => {
+                const linkCol = cols.find(c => c.semanticRole === 'link' || c.type === 'url');
+                if (linkCol) set(linkCol.id, url);
+                setShowDP(false);
+              }}
+            />
           )}
           {error && <div style={{ fontSize: 12, color: '#E24B4A', background: 'rgba(226,75,74,0.1)', padding: '8px 12px', borderRadius: 8 }}>{error}</div>}
         </div>
