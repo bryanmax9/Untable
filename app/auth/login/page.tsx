@@ -55,7 +55,7 @@ export default function LoginPage() {
 
 export function AuthShell({ title, sub, children }: { title: string; sub: string; children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f5f4f0] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#f5f4f0] flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="flex justify-center mb-8">
           <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -68,6 +68,13 @@ export function AuthShell({ title, sub, children }: { title: string; sub: string
           <h1 className="text-[20px] font-semibold text-slate-900 mb-1">{title}</h1>
           <p className="text-[13px] text-slate-500 mb-6">{sub}</p>
           {children}
+        </div>
+        <div className="mt-6 text-center text-[11px] text-slate-400 flex items-center justify-center gap-3">
+          <Link href="/privacy" className="hover:text-slate-600 transition-colors">Privacy Policy</Link>
+          <span>·</span>
+          <Link href="/terms" className="hover:text-slate-600 transition-colors">Terms of Service</Link>
+          <span>·</span>
+          <span>© {new Date().getFullYear()} Untable</span>
         </div>
       </div>
       <style>{`
