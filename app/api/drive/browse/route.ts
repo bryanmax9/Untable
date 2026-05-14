@@ -4,42 +4,47 @@ import { getValidToken } from '@/lib/server/google-api';
 
 export const runtime = 'nodejs';
 
-// Lists folders (and files) inside a Drive folder using the user's stored OAuth token.
-// folderId = Drive folder ID (omit for root)
+const DRIVE_FIELDS = 'files(id,name,mimeType,webViewLink,modifiedTime)';
+const ALL_DRIVES   = 'includeItemsFromAllDrives=true&supportsAllDrives=true';
+
 export async function GET(req: NextRequest) {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
 
   const folderId = req.nextUrl.searchParams.get('folderId') ?? 'root';
+  const source   = req.nextUrl.searchParams.get('source') ?? 'my-drive'; // 'my-drive' | 'shared'
 
   try {
     const token = await getValidToken(user.id);
+    const auth  = { Authorization: `Bearer ${token}` };
 
-    // Fetch folder metadata (to display name in breadcrumb)
+    // Fetch folder name for breadcrumb (skip for virtual roots)
     let folderName: string | null = null;
-    if (folderId !== 'root') {
+    if (folderId !== 'root' && source !== 'shared') {
       const metaRes = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        `https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name&${ALL_DRIVES}`,
+        { headers: auth },
       );
-      if (metaRes.ok) {
-        const meta = await metaRes.json();
-        folderName = meta.name ?? null;
-      }
+      if (metaRes.ok) folderName = (await metaRes.json()).name ?? null;
     }
 
-    // List contents: folders first, then files
-    const q   = `'${folderId}' in parents and trashed=false`;
-    const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files` +
-      `?q=${encodeURIComponent(q)}` +
-      `&fields=files(id,name,mimeType,webViewLink,modifiedTime)` +
-      `&orderBy=folder,name` +
-      `&pageSize=100`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
+    let q: string;
+    if (source === 'shared') {
+      // "Shared with me" — top-level only (no parent filter)
+      q = `sharedWithMe=true and trashed=false and mimeType='application/vnd.google-apps.folder'`;
+    } else {
+      q = `'${folderId}' in parents and trashed=false`;
+    }
 
+    const url = `https://www.googleapis.com/drive/v3/files` +
+      `?q=${encodeURIComponent(q)}` +
+      `&fields=${DRIVE_FIELDS}` +
+      `&orderBy=folder,name` +
+      `&pageSize=200` +
+      `&${ALL_DRIVES}`;
+
+    const res = await fetch(url, { headers: auth });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err?.error?.message ?? `Drive API error ${res.status}`);

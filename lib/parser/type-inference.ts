@@ -36,9 +36,15 @@ export function inferColumnType(values: unknown[]): ColumnType {
   if (allMatch(samples, (v: unknown) => typeof v === 'number' || !isNaN(Number(v)))) return 'number';
   if (allMatch(strings, (v: unknown) => BOOL_VALUES.has(String(v).toLowerCase()))) return 'boolean';
 
-  const unique = new Set(strings);
-  const ratio = unique.size / strings.length;
-  if (ratio < 0.15 && unique.size <= 25) return 'enum';
+  const unique  = new Set(strings);
+  const ratio   = unique.size / strings.length;
+  // Small datasets (Google Sheets often have <30 rows): relax ratio threshold
+  // but require short values so we don't misclassify free-text columns as enum.
+  const avgUniqueLen = [...unique].reduce((a, v) => a + v.length, 0) / (unique.size || 1);
+  const smallDataset = strings.length < 30;
+  const enumThreshold = smallDataset ? 0.5 : 0.15;
+  const enumMaxUnique = smallDataset ? 12 : 25;
+  if (ratio < enumThreshold && unique.size <= enumMaxUnique && avgUniqueLen < 40) return 'enum';
 
   const avgLen = strings.reduce((a, v) => a + v.length, 0) / strings.length;
   if (avgLen > 80) return 'longtext';
