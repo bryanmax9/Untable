@@ -512,8 +512,10 @@ function EditPanel({
     }
   }
 
-  const STATUS_OPTS   = ['EN PROGRESO', 'PENDIENTE', 'EN PROCESO', 'ALTA', 'URGENTE'];
-  const PRIORITY_OPTS = ['URGENTE', 'ALTA', 'MEDIA', 'BAJA'];
+  const statusCol  = cols.find(c => c.id === statusColId);
+  const priorityCol = cols.find(c => c.id === priorityColId);
+  const STATUS_OPTS   = statusCol?.options?.length   ? statusCol.options   : ['EN PROGRESO', 'PENDIENTE', 'EN PROCESO', 'ALTA', 'URGENTE'];
+  const PRIORITY_OPTS = priorityCol?.options?.length ? priorityCol.options : ['URGENTE', 'ALTA', 'MEDIA', 'BAJA'];
 
   function PillSel({ label, opts, colId }: { label: string; opts: string[]; colId: string | undefined }) {
     if (!colId) return null;
@@ -1844,9 +1846,24 @@ function ClientesView({ cases, onViewCase, onNewCase, onViewClient }: {
 // ─────────────────────────────────────────────────────────────────────────────
 // TareasView
 // ─────────────────────────────────────────────────────────────────────────────
-function TareasView({ cases, onViewCase }: { cases: LegalCase[]; onViewCase: (c: LegalCase) => void }) {
+const DONE_STATUSES = new Set(['listo','completado','done','hecho','cerrado','resuelto','finished','closed']);
+
+function TareasView({
+  cases, onViewCase, projectId, spreadsheetId, section, sectionIdx, setCases,
+}: {
+  cases: LegalCase[];
+  onViewCase: (c: LegalCase) => void;
+  projectId?: string;
+  spreadsheetId?: string;
+  section?: SectionWithRecords;
+  sectionIdx?: number;
+  setCases?: (updater: (prev: LegalCase[]) => LegalCase[]) => void;
+}) {
   const [filter, setFilter] = useState<'todos' | 'hoy' | 'semana'>('todos');
-  const [done, setDone] = useState<Set<string>>(new Set());
+  // Initialise from actual case status so the checkbox reflects the real sheet value
+  const [done, setDone] = useState<Set<string>>(
+    () => new Set(cases.filter(c => DONE_STATUSES.has((c.status || '').toLowerCase())).map(c => c._id))
+  );
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const filtered = cases
@@ -1898,7 +1915,34 @@ function TareasView({ cases, onViewCase }: { cases: LegalCase[]; onViewCase: (c:
                 <div
                   className={`la-task-check ${done.has(c._id) ? 'done' : ''}`}
                   style={{ marginTop: 2, flexShrink: 0 }}
-                  onClick={() => setDone(prev => { const n = new Set(prev); n.has(c._id) ? n.delete(c._id) : n.add(c._id); return n; })}>
+                  onClick={async () => {
+                    const wasDone = done.has(c._id);
+                    const newStatus = wasDone ? 'PENDIENTE' : 'LISTO';
+                    setDone(prev => { const n = new Set(prev); wasDone ? n.delete(c._id) : n.add(c._id); return n; });
+                    // Persist to DB and sheet if project is connected
+                    if (projectId && section) {
+                      const statusColId = section.bindings.status;
+                      if (statusColId) {
+                        const patch = { [statusColId]: newStatus };
+                        // Update Supabase record
+                        fetch(`/api/projects/${projectId}/records/${c._id}?section=${sectionIdx ?? 0}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(patch),
+                        }).then(r => r.json()).then(updated => {
+                          if (setCases) setCases(prev => prev.map(x => x._id === c._id ? { ...x, status: newStatus } : x));
+                          // Sync to Google Sheet
+                          if (spreadsheetId) {
+                            fetch('/api/projects/sync-record', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ projectId, recordId: c._id, patch }),
+                            }).catch(() => {});
+                          }
+                        }).catch(() => {});
+                      }
+                    }
+                  }}>
                   {done.has(c._id) && (
                     <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
                       <path d="M1.5 4.5l2 2 4-4" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
@@ -2137,7 +2181,13 @@ function NewCaseModal({ section, sectionIdx, projectId, onClose, onAdded }: {
   section: SectionWithRecords; sectionIdx: number; projectId: string;
   onClose: () => void; onAdded: (c: LegalCase) => void;
 }) {
-  const b = section.bindings;
+  const b    = section.bindings;
+  const cols = section.schema.columns;
+  const statusCol2   = cols.find(c => c.id === b.status);
+  const priorityCol2 = cols.find(c => c.id === b.priority);
+  const STATUS_OPTS2   = statusCol2?.options?.length   ? statusCol2.options   : ['PENDIENTE','EN PROCESO','EN PROGRESO','ALTA','URGENTE'];
+  const PRIORITY_OPTS2 = priorityCol2?.options?.length ? priorityCol2.options : ['URGENTE','ALTA','MEDIA','BAJA'];
+
   const [vals, setVals]             = useState<Record<string, string>>({});
   const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState<string | null>(null);
@@ -2196,7 +2246,7 @@ function NewCaseModal({ section, sectionIdx, projectId, onClose, onAdded }: {
           {b.status && (
             <div><div className="la-ep-label">Estado</div>
               <div className="la-pill-sel">
-                {['PENDIENTE','EN PROCESO','EN PROGRESO','ALTA','URGENTE'].map(s => (
+                {STATUS_OPTS2.map(s => (
                   <button key={s} className={`la-pill-opt ${vals.status === s ? 'active' : ''}`} onClick={() => set('status', s)}>{s}</button>
                 ))}
               </div>
@@ -2205,7 +2255,7 @@ function NewCaseModal({ section, sectionIdx, projectId, onClose, onAdded }: {
           {b.priority && (
             <div><div className="la-ep-label">Prioridad</div>
               <div className="la-pill-sel">
-                {['URGENTE','ALTA','MEDIA','BAJA'].map(p => (
+                {PRIORITY_OPTS2.map(p => (
                   <button key={p} className={`la-pill-opt ${vals.priority === p ? 'active' : ''}`} onClick={() => set('priority', p)}>{p}</button>
                 ))}
               </div>
@@ -2467,7 +2517,10 @@ export function LegalShell({ project }: { project: FullProject }) {
               search={search} setCases={setCases} onViewCase={viewCase} />
           )}
           {view === 'plazos'     && <PlazosView cases={cases} onViewCase={viewCase} />}
-          {view === 'tareas'     && <TareasView cases={cases} onViewCase={viewCase} />}
+          {view === 'tareas'     && <TareasView cases={cases} onViewCase={viewCase}
+            projectId={project.id} spreadsheetId={project.spreadsheetId}
+            section={section} sectionIdx={sectionIdx >= 0 ? sectionIdx : 0}
+            setCases={setCases} />}
           {view === 'documentos' && <DocumentosView cases={cases} />}
           {view === 'contratos'  && <ContratosView cases={cases} />}
           {view === 'equipo'     && <EquipoView cases={cases} />}
