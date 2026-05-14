@@ -3,6 +3,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import type { StoredProject, ProjectSection, Row, Bindings } from '@/lib/types';
 import { cn, initials, fmtDate, daysUntil, truncate } from '@/lib/utils';
+import { DriveFolderPickerModal } from '@/components/DriveFolderPickerModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface SectionWithRecords extends ProjectSection { records: Row[] }
@@ -433,12 +434,14 @@ function PanelView({
 // Edit slide-over panel
 // ─────────────────────────────────────────────────────────────────────────────
 function EditPanel({
-  caso, section, sectionIdx, projectId, onClose, onSaved,
+  caso, section, sectionIdx, projectId, spreadsheetId, sheetTab, onClose, onSaved,
 }: {
   caso: LegalCase;
   section: SectionWithRecords;
   sectionIdx: number;
   projectId: string;
+  spreadsheetId?: string;
+  sheetTab?: string;
   onClose: () => void;
   onSaved: (updated: Row) => void;
 }) {
@@ -472,8 +475,9 @@ function EditPanel({
     [hechosColId ?? '']:   caso.hechos,
     [procColId ?? '']:     caso.procedimiento,
   });
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState<string | null>(null);
+  const [saving, setSaving]           = useState(false);
+  const [error, setError]             = useState<string | null>(null);
+  const [showDrivePicker, setShowDP]  = useState(false);
 
   const set = (id: string | undefined, v: string) => {
     if (!id) return;
@@ -492,6 +496,15 @@ function EditPanel({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       onSaved(data);
+
+      // Non-blocking write-back to Google Sheet
+      if (spreadsheetId) {
+        fetch('/api/projects/sync-record', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ projectId, recordId: caso._id, patch: body }),
+        }).catch(() => {}); // fire-and-forget
+      }
     } catch (e) {
       setError(String(e));
     } finally {
@@ -588,7 +601,27 @@ function EditPanel({
             <Field label="Acción"  colId={actionColId} />
           </div>
           <Field label="Horario"           colId={horarioColId} />
-          <Field label="Link expediente"   colId={linkColId} />
+          {/* Link expediente — Drive folder picker */}
+          {linkColId && (
+            <div>
+              <div className="la-ep-label">Link expediente</div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input className="la-ep-input" style={{ flex: 1 }}
+                  value={draft[linkColId] ?? ''} onChange={e => set(linkColId, e.target.value)}
+                  placeholder="URL Drive o referencia" />
+                <button type="button" onClick={() => setShowDP(true)}
+                  style={{ flexShrink: 0, padding: '0 10px', borderRadius: 8, border: '0.5px solid rgba(99,102,241,0.4)', background: '#EEF2FF', color: '#4F46E5', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                  📁 Browse
+                </button>
+              </div>
+            </div>
+          )}
+          {showDrivePicker && (
+            <DriveFolderPickerModal
+              onClose={() => setShowDP(false)}
+              onSelect={(url) => { set(linkColId, url); setShowDP(false); }}
+            />
+          )}
           <Field label="Observaciones"     colId={notesColId} type="textarea" rows={3} />
           <Field label="Hechos"            colId={hechosColId} type="textarea" rows={4} />
           <Field label="Procedimiento"     colId={procColId} type="textarea" rows={4} />
@@ -617,12 +650,14 @@ function EditPanel({
 const PAGE_SIZE = 20;
 
 function RegistrosView({
-  cases, section, sectionIdx, projectId, search, setCases, onViewCase,
+  cases, section, sectionIdx, projectId, spreadsheetId, sheetTab, search, setCases, onViewCase,
 }: {
   cases: LegalCase[];
   section: SectionWithRecords;
   sectionIdx: number;
   projectId: string;
+  spreadsheetId?: string;
+  sheetTab?: string;
   search: string;
   setCases: (updater: (prev: LegalCase[]) => LegalCase[]) => void;
   onViewCase: (c: LegalCase) => void;
@@ -778,6 +813,8 @@ function RegistrosView({
           section={section}
           sectionIdx={sectionIdx}
           projectId={projectId}
+          spreadsheetId={spreadsheetId}
+          sheetTab={sheetTab}
           onClose={() => setEditCase(null)}
           onSaved={updated => {
             setCases(prev => prev.map(c =>
@@ -949,12 +986,14 @@ function PlazosView({ cases, onViewCase }: { cases: LegalCase[]; onViewCase: (c:
 // VIEW 4 — CASO DETALLE
 // ─────────────────────────────────────────────────────────────────────────────
 function CaseDetailView({
-  caso, section, sectionIdx, projectId, onBack, onUpdated,
+  caso, section, sectionIdx, projectId, spreadsheetId, sheetTab, onBack, onUpdated,
 }: {
   caso: LegalCase;
   section: SectionWithRecords;
   sectionIdx: number;
   projectId: string;
+  spreadsheetId?: string;
+  sheetTab?: string;
   onBack: () => void;
   onUpdated: (updated: LegalCase) => void;
 }) {
@@ -1302,6 +1341,8 @@ function CaseDetailView({
           section={section}
           sectionIdx={sectionIdx}
           projectId={projectId}
+          spreadsheetId={spreadsheetId}
+          sheetTab={sheetTab}
           onClose={() => setEditing(false)}
           onSaved={updated => {
             onUpdated(rowToCase(updated, section.bindings, section));
@@ -2097,9 +2138,10 @@ function NewCaseModal({ section, sectionIdx, projectId, onClose, onAdded }: {
   onClose: () => void; onAdded: (c: LegalCase) => void;
 }) {
   const b = section.bindings;
-  const [vals, setVals] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [vals, setVals]             = useState<Record<string, string>>({});
+  const [saving, setSaving]         = useState(false);
+  const [error, setError]           = useState<string | null>(null);
+  const [showDrivePicker, setShowDP] = useState(false);
 
   const set = (k: string, v: string) => setVals(p => ({ ...p, [k]: v }));
 
@@ -2194,8 +2236,24 @@ function NewCaseModal({ section, sectionIdx, projectId, onClose, onAdded }: {
               <input className="la-ep-input" value={vals.action ?? ''} onChange={e => set('action', e.target.value)} placeholder="REVISAR, RECORDAR…" /></div>
           )}
           {b.link && (
-            <div><div className="la-ep-label">Link expediente</div>
-              <input className="la-ep-input" value={vals.link ?? ''} onChange={e => set('link', e.target.value)} placeholder="URL Drive o referencia" /></div>
+            <div>
+              <div className="la-ep-label">Link expediente</div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input className="la-ep-input" style={{ flex: 1 }}
+                  value={vals.link ?? ''} onChange={e => set('link', e.target.value)}
+                  placeholder="URL Drive o referencia" />
+                <button type="button" onClick={() => setShowDP(true)}
+                  style={{ flexShrink: 0, padding: '0 10px', borderRadius: 8, border: '0.5px solid rgba(99,102,241,0.4)', background: '#EEF2FF', color: '#4F46E5', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                  📁 Browse
+                </button>
+              </div>
+              {showDrivePicker && (
+                <DriveFolderPickerModal
+                  onClose={() => setShowDP(false)}
+                  onSelect={(url) => { set('link', url); setShowDP(false); }}
+                />
+              )}
+            </div>
           )}
           {b.notes && (
             <div><div className="la-ep-label">Observaciones</div>
@@ -2405,6 +2463,7 @@ export function LegalShell({ project }: { project: FullProject }) {
           {view === 'casos' && (
             <RegistrosView cases={cases} section={section}
               sectionIdx={sectionIdx >= 0 ? sectionIdx : 0} projectId={project.id}
+              spreadsheetId={project.spreadsheetId} sheetTab={project.sheetTab}
               search={search} setCases={setCases} onViewCase={viewCase} />
           )}
           {view === 'plazos'     && <PlazosView cases={cases} onViewCase={viewCase} />}
@@ -2415,6 +2474,7 @@ export function LegalShell({ project }: { project: FullProject }) {
           {view === 'detail' && detailCase && (
             <CaseDetailView caso={detailCase} section={section}
               sectionIdx={sectionIdx >= 0 ? sectionIdx : 0} projectId={project.id}
+              spreadsheetId={project.spreadsheetId} sheetTab={project.sheetTab}
               onBack={() => navTo(prevView)}
               onUpdated={updated => { setCases(prev => prev.map(c => c._id === updated._id ? updated : c)); setDetailCase(updated); }} />
           )}

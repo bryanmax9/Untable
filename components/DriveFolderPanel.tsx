@@ -51,7 +51,12 @@ export function DriveFolderPanel({ folderUrl, onChangeFolderUrl, readOnly }: Pro
   useEffect(() => {
     if (!folderUrl) return;
     setLoading(true); setError(null);
-    fetch(`/api/drive/files?url=${encodeURIComponent(folderUrl)}`)
+    // Use the authenticated browse endpoint (uses stored Google token server-side)
+    const match = folderUrl.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+    const endpoint = match
+      ? `/api/drive/browse?folderId=${match[1]}`
+      : `/api/drive/files?url=${encodeURIComponent(folderUrl)}`;
+    fetch(endpoint)
       .then(r => r.json())
       .then(d => {
         if (d.error) { setError(d.error); setLoading(false); return; }

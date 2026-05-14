@@ -54,6 +54,8 @@ export async function getProject(id: string): Promise<StoredProject | null> {
     name: p.name,
     originalFilename: p.original_filename,
     createdAt: p.created_at,
+    spreadsheetId: p.spreadsheet_id ?? undefined,
+    sheetTab:      p.sheet_tab ?? undefined,
     sections: (sections ?? []).map(sectionRow),
   };
 }

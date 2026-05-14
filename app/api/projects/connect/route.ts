@@ -47,7 +47,11 @@ export async function POST(req: NextRequest) {
     };
 
     await saveProject(project, user.id);
-    await writeRecords(projectId, 0, rows);
+
+    // Tag each row with its 1-indexed sheet row number (header = row 1, data starts at row 2)
+    // This allows precise write-back later without scanning the whole sheet
+    const rowsWithIdx = rows.map((row, i) => ({ ...row, _sheet_row: i + 2 }));
+    await writeRecords(projectId, 0, rowsWithIdx);
 
     // Store spreadsheet_id + sheet_tab on the project row for Phase 3 sync
     const { createClient: createServiceClient } = await import('@supabase/supabase-js');

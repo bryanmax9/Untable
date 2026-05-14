@@ -100,6 +100,8 @@ export interface StoredProject {
   originalFilename: string;
   createdAt: string;
   sections: ProjectSection[];
+  spreadsheetId?: string;
+  sheetTab?: string;
 }
 
 export interface ProjectListItem {
