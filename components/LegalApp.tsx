@@ -2441,6 +2441,20 @@ export function LegalShell({ project }: { project: FullProject }) {
   const [showNew,          setShowNew]          = useState(false);
   const [activeClientName, setActiveClientName] = useState<string | null>(null);
 
+  // Auto-sync schema + _sheet_row on first load of this project (once per browser session).
+  // This ensures dropdowns, column types, and row indices are always up-to-date without
+  // requiring the user to click any button.
+  useEffect(() => {
+    if (!project.spreadsheetId) return;
+    const key = `schema_synced_${project.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+    fetch(`/api/projects/${project.id}/reconnect`, { method: 'POST' })
+      .then(r => r.json())
+      .then(d => { if (d.ok) window.location.reload(); })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function setCases(updater: (prev: LegalCase[]) => LegalCase[]) { setCasesRaw(updater); }
   function navTo(v: LegalViewId) {
@@ -2568,7 +2582,7 @@ export function LegalShell({ project }: { project: FullProject }) {
                     <path d="M12 7A5 5 0 1 1 7 2M7 2l2.5 2.5M7 2L4.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </span>
-                {reconnecting ? 'Sincronizando…' : 'Sincronizar hoja'}
+                {reconnecting ? 'Actualizando…' : 'Actualizar desde hoja'}
               </button>
               {reconnectMsg && (
                 <div style={{ fontSize: 11, padding: '4px 10px 6px', color: reconnectMsg.startsWith('Error') ? '#c0392b' : '#085041' }}>
