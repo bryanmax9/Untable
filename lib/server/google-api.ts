@@ -102,18 +102,27 @@ export async function sheetsGetFullData(
   const hyperlinks: (string | null)[][] = rowData.map((row: any) =>
     (row.values ?? []).map((cell: any) => (cell.hyperlink as string | undefined) ?? null));
 
-  // Collect dropdown options per column from data validation
+  // Collect dropdown options per column from data validation.
+  // ONE_OF_LIST → explicit options stored directly.
+  // ONE_OF_RANGE → references another range; mark with [] so the parser
+  //   collects unique values from the actual data as the option list.
   const maxCols = Math.max(...rowData.map((r: any) => (r.values ?? []).length), 0);
   const colValidations: (string[] | null)[] = new Array(maxCols).fill(null);
   for (const row of rowData) {
     const cells = (row.values ?? []) as any[];
     for (let ci = 0; ci < cells.length; ci++) {
-      if (colValidations[ci]) continue;
+      if (colValidations[ci] !== null) continue;
       const dv = cells[ci]?.dataValidation;
-      if (dv?.condition?.type === 'ONE_OF_LIST') {
+      if (!dv?.condition) continue;
+      if (dv.condition.type === 'ONE_OF_LIST') {
         const opts = ((dv.condition.values ?? []) as any[])
           .map((v: any) => String(v.userEnteredValue ?? '')).filter(Boolean);
         if (opts.length > 0) colValidations[ci] = opts;
+      } else if (dv.condition.type === 'ONE_OF_RANGE') {
+        // Range-based dropdown — options come from another cell range.
+        // Set empty array as sentinel so the parser treats this as enum
+        // and fills options from existing data values.
+        colValidations[ci] = [];
       }
     }
   }

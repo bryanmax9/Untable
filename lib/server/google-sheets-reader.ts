@@ -172,15 +172,22 @@ export function parseGoogleSheetValues(
     const semanticRole = detectSemanticRole(label);
 
     // Google Sheets data validation is the most reliable source for dropdown detection.
-    // Override inferred type when the sheet has an explicit ONE_OF_LIST rule.
+    // validationOpts is null (no validation), [] (ONE_OF_RANGE — range-based dropdown),
+    // or string[] (ONE_OF_LIST — explicit options).
     const validationOpts = colValidations?.[i];
-    if (validationOpts?.length) type = 'enum';
+    const hasValidation = validationOpts !== null && validationOpts !== undefined;
+    if (hasValidation) type = 'enum';
+
+    // For ONE_OF_LIST: use the provided options directly.
+    // For ONE_OF_RANGE (empty array sentinel) or inferred enum: collect unique data values.
+    const uniqueFromData = [...new Set(
+      colValues[i].filter(v => v != null && v !== '').map(String)
+    )].sort().slice(0, 50);
 
     const options: string[] | undefined =
-      validationOpts?.length ? validationOpts :
-      type === 'enum'
-        ? [...new Set(colValues[i].filter(v => v != null && v !== '').map(String))].slice(0, 30)
-        : undefined;
+      (validationOpts && validationOpts.length > 0) ? validationOpts :
+      (hasValidation || type === 'enum') ? uniqueFromData :
+      undefined;
 
     columns.push({ id, excelHeader: label, label, type, semanticRole, options });
     colIndexMap.push(i);
