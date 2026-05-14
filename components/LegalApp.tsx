@@ -600,7 +600,12 @@ function EditPanel({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ projectId, recordId: caso._id, patch: body }),
-        }).catch(() => {});
+        }).then(async r => {
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) console.error('[sync-record] error:', d);
+          else if (d.skipped) console.warn('[sync-record] skipped:', d.skipped);
+          else console.log('[sync-record] ok, row', d.sheetRow, 'updated', d.updated, 'cols');
+        }).catch(e => console.error('[sync-record] network error:', e));
       }
     } catch (e) {
       setError(String(e));
@@ -2319,6 +2324,8 @@ export function LegalShell({ project }: { project: FullProject }) {
   const [detailCase,  setDetailCase] = useState<LegalCase | null>(null);
   const [search,      setSearch]     = useState('');
   const [downloading, setDownloading] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
+  const [reconnectMsg, setReconnectMsg] = useState<string | null>(null);
   const [showNew,          setShowNew]          = useState(false);
   const [activeClientName, setActiveClientName] = useState<string | null>(null);
 
@@ -2340,6 +2347,21 @@ export function LegalShell({ project }: { project: FullProject }) {
       a.download = (project.originalFilename.replace(/\.[^.]+$/, '') ?? 'export') + '_updated.xlsx';
       a.click(); URL.revokeObjectURL(url);
     } finally { setDownloading(false); }
+  }
+
+  async function reconnect() {
+    setReconnecting(true); setReconnectMsg(null);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/reconnect`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) { setReconnectMsg('Error: ' + (data.error ?? 'unknown')); return; }
+      setReconnectMsg(`Sincronizado (${data.rowCount} filas). Recargando…`);
+      setTimeout(() => window.location.reload(), 1200);
+    } catch (e) {
+      setReconnectMsg('Error de red');
+    } finally {
+      setReconnecting(false);
+    }
   }
 
   const overdueCount = cases.filter(c => { const d = daysUntil(c.deadline); return d !== null && d < 0; }).length;
@@ -2423,6 +2445,25 @@ export function LegalShell({ project }: { project: FullProject }) {
         </nav>
 
         <div className="la-sidebar-footer">
+          {/* Reconnect Google Sheet — re-syncs schema, dropdowns, and _sheet_row indices */}
+          {project.spreadsheetId && (
+            <>
+              <button onClick={reconnect} disabled={reconnecting} className="la-nav-item"
+                style={{ width: '100%', textAlign: 'left', marginBottom: 4, opacity: reconnecting ? 0.6 : 1, color: '#534AB7' }}>
+                <span className="la-nav-ico">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M12 7A5 5 0 1 1 7 2M7 2l2.5 2.5M7 2L4.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
+                {reconnecting ? 'Sincronizando…' : 'Sincronizar hoja'}
+              </button>
+              {reconnectMsg && (
+                <div style={{ fontSize: 11, padding: '4px 10px 6px', color: reconnectMsg.startsWith('Error') ? '#c0392b' : '#085041' }}>
+                  {reconnectMsg}
+                </div>
+              )}
+            </>
+          )}
           {/* Download up-to-date Excel */}
           <button onClick={dl} disabled={downloading} className="la-nav-item" style={{ width: '100%', textAlign: 'left', marginBottom: 4, opacity: downloading ? 0.6 : 1 }}>
             <span className="la-nav-ico">

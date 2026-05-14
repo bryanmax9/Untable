@@ -11,6 +11,11 @@ function colLetter(idx: number): string {
   return s;
 }
 
+function norm(v: unknown): string {
+  if (v == null) return '';
+  return String(v).trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
 async function findSheetRow(
   token: string, spreadsheetId: string, sheetTab: string,
   rowData: Record<string, unknown>,
@@ -26,24 +31,48 @@ async function findSheetRow(
   if (rows.length < 2) return null;
   const headers = rows[0];
 
-  // Build map: excelHeader → sheet column index
+  // Build map: excelHeader → sheet column index (case-insensitive, trimmed)
   const headerIdx: Record<string, number> = {};
-  headers.forEach((h, i) => { headerIdx[h] = i; });
+  headers.forEach((h, i) => { headerIdx[h.trim().toLowerCase()] = i; });
+
+  // Collect non-empty stored values for matching
+  const nonEmptyCols = schema.columns.filter(col => {
+    if (col.id.startsWith('_')) return false;
+    const v = rowData[col.id];
+    return v != null && String(v).trim() !== '';
+  });
+
+  let bestRow: number | null = null;
+  let bestScore = -1;
 
   for (let ri = 1; ri < rows.length; ri++) {
     const row = rows[ri];
+    if (!row.some(c => c != null && c !== '')) continue;
     let matched = 0, total = 0;
-    for (const col of schema.columns) {
-      if (col.id.startsWith('_')) continue;
-      const ci = headerIdx[col.excelHeader];
+    for (const col of nonEmptyCols) {
+      const ci = headerIdx[col.excelHeader.trim().toLowerCase()];
       if (ci === undefined) continue;
       total++;
-      const stored = String(rowData[col.id] ?? '').trim();
-      const sheet  = String(row[ci] ?? '').trim();
+      const stored = norm(rowData[col.id]);
+      const sheet  = norm(row[ci]);
       if (stored === sheet) matched++;
     }
-    if (total > 0 && matched / total >= 0.7) return ri + 1; // +1 = 1-indexed sheet row (header = row 1)
+    if (total > 0) {
+      const score = matched / total;
+      if (score >= 0.6 && score > bestScore) { bestScore = score; bestRow = ri + 1; }
+    }
   }
+
+  if (bestRow) return bestRow;
+
+  // Last-resort: match by first non-empty text value that appears somewhere in a row
+  const firstVal = norm(nonEmptyCols[0] ? rowData[nonEmptyCols[0].id] : null);
+  if (firstVal.length > 3) {
+    for (let ri = 1; ri < rows.length; ri++) {
+      if (rows[ri].some(c => norm(c) === firstVal)) return ri + 1;
+    }
+  }
+
   return null;
 }
 
