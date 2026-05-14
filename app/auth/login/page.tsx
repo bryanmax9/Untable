@@ -2,73 +2,77 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
-import { useLang, T } from '@/lib/useLang';
 
 export default function LoginPage() {
-  const [lang] = useLang();
-  const tx = T[lang];
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [error, setError]     = useState('');
   const sb = createClient();
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(''); setLoading(true);
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) { setError(error.message); setLoading(false); return; }
-    router.push('/');
-    router.refresh();
+  async function signInWithGoogle() {
+    setLoading(true);
+    setError('');
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        scopes: [
+          'https://www.googleapis.com/auth/spreadsheets',
+          'https://www.googleapis.com/auth/drive.readonly',
+        ].join(' '),
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
+    if (error) { setError(error.message); setLoading(false); }
   }
 
-  return (
-    <AuthShell title={tx.login} sub={tx.loginSub}>
-      <form onSubmit={submit} className="flex flex-col gap-4">
-        <Field label={tx.email}>
-          <input type="email" required autoFocus value={email} onChange={e => setEmail(e.target.value)}
-            className="auth-input" placeholder="you@company.com" />
-        </Field>
-        <Field label={tx.password}>
-          <input type="password" required value={password} onChange={e => setPassword(e.target.value)}
-            className="auth-input" placeholder="••••••••" />
-        </Field>
-        <div className="text-right -mt-1">
-          <Link href="/auth/forgot-password" className="text-[12px] text-indigo-600 hover:underline">
-            {tx.forgotLink}
-          </Link>
-        </div>
-        {error && <p className="text-[12px] text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{error}</p>}
-        <button type="submit" disabled={loading} className="auth-btn">
-          {loading ? tx.signingIn : tx.signIn}
-        </button>
-      </form>
-      <p className="text-center text-[13px] text-slate-500 mt-6">
-        {tx.noAccount}{' '}
-        <Link href="/auth/signup" className="text-indigo-600 font-medium hover:underline">{tx.register}</Link>
-      </p>
-    </AuthShell>
-  );
-}
-
-export function AuthShell({ title, sub, children }: { title: string; sub: string; children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#f5f4f0] flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="flex justify-center mb-8">
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
-            <svg viewBox="0 0 18 18" fill="none" className="w-5 h-5">
+          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <svg viewBox="0 0 18 18" fill="none" className="w-6 h-6">
               <path d="M5 4l-3 5 3 5M13 4l3 5-3 5M11 3l-4 12" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
         </div>
-        <div className="bg-white rounded-2xl border border-black/[0.06] p-8 shadow-sm">
-          <h1 className="text-[20px] font-semibold text-slate-900 mb-1">{title}</h1>
-          <p className="text-[13px] text-slate-500 mb-6">{sub}</p>
-          {children}
+
+        <div className="bg-white rounded-2xl border border-black/[0.06] px-8 py-10 shadow-sm text-center">
+          <h1 className="text-[22px] font-semibold text-slate-900 mb-2">Welcome to Sheetshift</h1>
+          <p className="text-[14px] text-slate-500 mb-8 leading-relaxed">
+            Sign in with Google to connect your spreadsheets and turn them into apps.
+          </p>
+
+          {error && (
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-[13px] rounded-xl px-4 py-3 mb-5 text-left">
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={signInWithGoogle}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3.5 bg-white border-2 border-slate-200 hover:border-indigo-300 hover:bg-slate-50 rounded-xl text-[14px] font-semibold text-slate-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+          >
+            {loading ? (
+              <svg className="w-5 h-5 animate-spin text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+            )}
+            <span>{loading ? 'Signing in…' : 'Continue with Google'}</span>
+          </button>
         </div>
+
         <div className="mt-6 text-center text-[11px] text-slate-400 flex items-center justify-center gap-3">
           <Link href="/privacy" className="hover:text-slate-600 transition-colors">Privacy Policy</Link>
           <span>·</span>
@@ -77,22 +81,6 @@ export function AuthShell({ title, sub, children }: { title: string; sub: string
           <span>© {new Date().getFullYear()} Untable</span>
         </div>
       </div>
-      <style>{`
-        .auth-input{width:100%;padding:10px 12px;border-radius:10px;border:0.5px solid rgba(15,23,42,0.18);font-size:14px;outline:none;background:#fff;color:#0f172a;transition:border-color .15s}
-        .auth-input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,0.08)}
-        .auth-btn{width:100%;padding:11px;border-radius:10px;background:#4F46E5;color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:opacity .15s}
-        .auth-btn:hover:not(:disabled){opacity:.9}
-        .auth-btn:disabled{opacity:.6;cursor:default}
-      `}</style>
-    </div>
-  );
-}
-
-export function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide">{label}</label>
-      {children}
     </div>
   );
 }

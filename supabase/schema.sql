@@ -88,6 +88,23 @@ create table if not exists public.records (
   created_at timestamptz default now()
 );
 
+-- ── Google OAuth tokens ───────────────────────────────────────
+-- Stores owner Google provider tokens for Sheets API calls.
+-- Service-role only — no user can read/write this table directly.
+create table if not exists public.user_google_tokens (
+  user_id       uuid primary key references auth.users on delete cascade,
+  access_token  text not null,
+  refresh_token text,
+  expires_at    timestamptz not null,
+  scopes        text not null default '',
+  updated_at    timestamptz default now()
+);
+
+alter table public.user_google_tokens enable row level security;
+drop policy if exists "google_tokens_service_only" on public.user_google_tokens;
+create policy "google_tokens_service_only" on public.user_google_tokens
+  using (false); -- service role bypasses this; no user can access
+
 -- ── Storage bucket ────────────────────────────────────────────
 insert into storage.buckets (id, name, public)
   values ('excel-files', 'excel-files', false)
