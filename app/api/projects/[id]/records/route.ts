@@ -52,14 +52,23 @@ export async function POST(req: NextRequest, { params }: Ctx) {
 
         if (schema) {
           const token = await getValidToken(user.id);
+          // Fetch first 10 rows to detect the actual header row (sheet may have title rows before headers)
           const headRes = await fetch(
-            `https://sheets.googleapis.com/v4/spreadsheets/${project.spreadsheetId}/values/${encodeURIComponent(project.sheetTab)}!1:1`,
+            `https://sheets.googleapis.com/v4/spreadsheets/${project.spreadsheetId}/values/${encodeURIComponent(project.sheetTab)}!1:10`,
             { headers: { Authorization: `Bearer ${token}` } },
           );
           if (headRes.ok) {
-            const headers: string[] = (await headRes.json()).values?.[0] ?? [];
+            const first10: string[][] = (await headRes.json()).values ?? [];
+            // Find the row whose cells best match schema excelHeaders
+            const knownHeaders = new Set(schema.columns.map(c => c.excelHeader.trim().toLowerCase()));
+            let bestIdx = 0, bestScore = 0;
+            for (let i = 0; i < first10.length; i++) {
+              const score = first10[i].filter(c => knownHeaders.has((c ?? '').trim().toLowerCase())).length;
+              if (score > bestScore) { bestScore = score; bestIdx = i; }
+            }
+            const headers: string[] = first10[bestIdx] ?? [];
             const rowValues = headers.map(h => {
-              const col = schema.columns.find(c => c.excelHeader === h);
+              const col = schema.columns.find(c => c.excelHeader.trim().toLowerCase() === h.trim().toLowerCase());
               return col ? String(row[col.id] ?? '') : '';
             });
             const appendRes = await fetch(
