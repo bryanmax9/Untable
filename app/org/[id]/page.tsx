@@ -206,12 +206,13 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
               Delete org
             </button>
           )}
-          <Link href={`/upload?org=${id}`}
+          <Link href={`/connect?org=${id}`}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-medium px-4 py-2 rounded-lg transition-colors">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <path d="M6.5 1v8M3 6l3.5-3.5L10 6M2 11h9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+              <rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" opacity=".25"/>
+              <path d="M8 9h8M8 12h8M8 15h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
             </svg>
-            {tx.uploadExcel}
+            Connect sheet
           </Link>
         </div>
       </div>
@@ -223,11 +224,11 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h2 className="text-[17px] font-semibold text-slate-800 mb-2">{tx.noProjects}</h2>
-          <p className="text-[13px] text-slate-500 mb-6 max-w-sm mx-auto">{tx.noProjectsSub}</p>
-          <Link href={`/upload?org=${id}`}
+          <h2 className="text-[17px] font-semibold text-slate-800 mb-2">No projects yet</h2>
+          <p className="text-[13px] text-slate-500 mb-6 max-w-sm mx-auto">Connect a Google Sheet and Sheetshift turns it into a clean, organised app.</p>
+          <Link href={`/connect?org=${id}`}
             className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-medium px-5 py-2.5 rounded-lg transition-colors">
-            {tx.firstProject}
+            Connect first sheet
           </Link>
         </div>
       ) : (
@@ -254,12 +255,12 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
               </button>
             </div>
           ))}
-          <Link href={`/upload?org=${id}`}
+          <Link href={`/connect?org=${id}`}
             className="bg-white rounded-xl border-2 border-dashed border-slate-200 p-5 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all flex flex-col items-center justify-center gap-2 min-h-[160px]">
             <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round"/></svg>
             </div>
-            <span className="text-[13px] font-medium text-slate-400">{tx.uploadExcel}</span>
+            <span className="text-[13px] font-medium text-slate-400">Connect sheet</span>
           </Link>
         </div>
       )}

@@ -62,9 +62,11 @@ create table if not exists public.org_members (
 
 create table if not exists public.projects (
   id                uuid primary key default gen_random_uuid(),
-  org_id            uuid references public.organizations(id) on delete cascade, -- nullable: projects without an org are personal
+  org_id            uuid references public.organizations(id) on delete cascade,
   name              text not null,
-  original_filename text not null,
+  original_filename text not null default '',
+  spreadsheet_id    text,        -- Google Sheets spreadsheet ID (null for Excel-imported)
+  sheet_tab         text,        -- Google Sheets tab/sheet name
   created_by        uuid references auth.users(id) on delete set null,
   created_at        timestamptz default now()
 );
