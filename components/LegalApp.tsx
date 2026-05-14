@@ -2245,18 +2245,37 @@ function NewCaseModal({ section, sectionIdx, projectId, onClose, onAdded }: {
   const [saving, setSaving]          = useState(false);
   const [error, setError]            = useState<string | null>(null);
   const [showDrivePicker, setShowDP] = useState(false);
+  // Drive file upload state
+  const [pendingFile,  setPendingFile]  = useState<File | null>(null);
+  const [uploadFolder, setUploadFolder] = useState<string>(''); // folder URL or ID
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const set = (k: string, v: string) => setVals(p => ({ ...p, [k]: v }));
+  const linkCol = cols.find(c => c.semanticRole === 'link' || c.type === 'url');
 
   async function save() {
     setSaving(true); setError(null);
     try {
+      // If user picked a file to upload, do it first
+      let linkUrl = vals[linkCol?.id ?? ''] ?? '';
+      if (pendingFile && uploadFolder) {
+        const fd = new FormData();
+        fd.append('file', pendingFile);
+        fd.append('folderId', uploadFolder);
+        const upRes = await fetch('/api/drive/upload', { method: 'POST', body: fd });
+        const upData = await upRes.json();
+        if (!upRes.ok) throw new Error(upData.error ?? 'Error subiendo archivo a Drive');
+        linkUrl = upData.webViewLink ?? '';
+        if (linkCol) set(linkCol.id, linkUrl);
+      }
+
       const body: Record<string, string> = {};
       for (const col of cols) {
-        if (col.semanticRole === 'identifier') continue; // auto-assign below
-        if (vals[col.id] !== undefined && vals[col.id] !== '') body[col.id] = vals[col.id];
+        if (col.semanticRole === 'identifier') continue;
+        const v = col.id === linkCol?.id ? linkUrl : (vals[col.id] ?? '');
+        if (v !== '') body[col.id] = v;
       }
-      // Auto-assign N°: max existing + 1
+      // Auto-assign N°
       const identifierCol = cols.find(c => c.semanticRole === 'identifier');
       if (identifierCol) {
         const maxNum = section.records.reduce((m, r) => {
@@ -2287,25 +2306,90 @@ function NewCaseModal({ section, sectionIdx, projectId, onClose, onAdded }: {
           </div>
           <button className="la-btn la-btn-sm" onClick={onClose} style={{ flexShrink: 0 }}>✕</button>
         </div>
-        {/* Body — dynamic: every column except auto-assigned identifiers (N°) */}
         <div className="la-ep-body">
           {cols
-            .filter(col => col.semanticRole !== 'identifier') // N° auto-assigns, don't ask user
-            .map(col => (
-            <DynamicField
-              key={col.id}
-              col={col}
-              value={vals[col.id] ?? ''}
-              onChange={v => set(col.id, v)}
-              onPickDrive={(col.type === 'url' || col.semanticRole === 'link') ? () => setShowDP(true) : undefined}
-            />
-          ))}
+            .filter(col => col.semanticRole !== 'identifier')
+            .map(col => {
+              const isLinkCol = col.semanticRole === 'link' || col.type === 'url';
+              if (isLinkCol) {
+                return (
+                  <div key={col.id} className="la-field">
+                    <label className="la-field-label">{col.label}</label>
+                    {/* Folder target row */}
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                      <input
+                        className="la-field-input"
+                        style={{ flex: 1 }}
+                        placeholder="URL del documento o carpeta…"
+                        value={vals[col.id] ?? ''}
+                        onChange={e => set(col.id, e.target.value)}
+                      />
+                      <button className="la-btn la-btn-sm" type="button" onClick={() => setShowDP(true)}
+                        title="Seleccionar carpeta de destino en Drive">
+                        📁 Carpeta
+                      </button>
+                    </div>
+                    {/* File upload row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        style={{ display: 'none' }}
+                        onChange={e => {
+                          const f = e.target.files?.[0] ?? null;
+                          setPendingFile(f);
+                          if (f) {
+                            // Use link field value as folder if it looks like a folder URL
+                            const cur = vals[col.id] ?? '';
+                            if (cur.includes('/folders/') || (!cur.startsWith('http') && cur)) {
+                              setUploadFolder(cur);
+                            }
+                          }
+                        }}
+                      />
+                      <button className="la-btn la-btn-sm" type="button"
+                        onClick={() => {
+                          const cur = vals[col.id] ?? '';
+                          if (cur.includes('/folders/') || (!cur.startsWith('http') && cur.length > 4)) {
+                            setUploadFolder(cur);
+                          }
+                          fileInputRef.current?.click();
+                        }}
+                        style={{ whiteSpace: 'nowrap' }}>
+                        ⬆ Subir archivo
+                      </button>
+                      {pendingFile ? (
+                        <span style={{ fontSize: 11, color: '#534AB7', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          📎 {pendingFile.name}
+                          <button style={{ marginLeft: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#9c9a92', fontSize: 11 }}
+                            onClick={() => { setPendingFile(null); setUploadFolder(''); }}>✕</button>
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 11, color: '#9c9a92' }}>
+                          {uploadFolder ? `→ ${uploadFolder.split('/').pop() ?? 'carpeta'}` : 'Selecciona carpeta primero, luego sube el archivo'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <DynamicField
+                  key={col.id}
+                  col={col}
+                  value={vals[col.id] ?? ''}
+                  onChange={v => set(col.id, v)}
+                />
+              );
+            })}
           {showDrivePicker && (
             <DriveFolderPickerModal
               onClose={() => setShowDP(false)}
               onSelect={(url) => {
-                const linkCol = cols.find(c => c.semanticRole === 'link' || c.type === 'url');
-                if (linkCol) set(linkCol.id, url);
+                if (linkCol) {
+                  set(linkCol.id, url);
+                  setUploadFolder(url);
+                }
                 setShowDP(false);
               }}
             />
@@ -2315,7 +2399,7 @@ function NewCaseModal({ section, sectionIdx, projectId, onClose, onAdded }: {
         <div className="la-ep-footer">
           <button className="la-btn" onClick={onClose}>Cancelar</button>
           <button className="la-btn la-btn-primary" onClick={save} disabled={saving}>
-            {saving ? 'Guardando…' : 'Crear caso'}
+            {saving ? (pendingFile ? 'Subiendo archivo…' : 'Guardando…') : 'Crear caso'}
           </button>
         </div>
       </div>

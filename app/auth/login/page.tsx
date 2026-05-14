@@ -17,6 +17,7 @@ export default function LoginPage() {
         scopes: [
           'https://www.googleapis.com/auth/spreadsheets',
           'https://www.googleapis.com/auth/drive.readonly',
+          'https://www.googleapis.com/auth/drive.file',
         ].join(' '),
         redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: {
