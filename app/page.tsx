@@ -241,6 +241,14 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      <footer className="border-t border-black/[0.05] mt-auto py-6 px-6 flex items-center justify-center gap-6 text-[12px] text-slate-400">
+        <Link href="/privacy" className="hover:text-slate-600 transition-colors">Privacy Policy</Link>
+        <span>·</span>
+        <Link href="/terms" className="hover:text-slate-600 transition-colors">Terms of Service</Link>
+        <span>·</span>
+        <span>© {new Date().getFullYear()} Untable</span>
+      </footer>
     </div>
   );
 }
