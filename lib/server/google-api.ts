@@ -70,3 +70,53 @@ export async function sheetsGetValues(token: string, spreadsheetId: string, tabN
   const data = await res.json();
   return data.values ?? [];
 }
+
+export interface SheetFullData {
+  values:            string[][];
+  hyperlinks:        (string | null)[][];  // per cell — Drive URL embedded in cell
+  colValidations:    (string[] | null)[];  // per column — dropdown options from data validation
+}
+
+// Fetches values + embedded hyperlinks + data validation rules in one request.
+// Used when connecting a sheet so we detect dropdowns and Drive links correctly.
+export async function sheetsGetFullData(
+  token: string, spreadsheetId: string, tabName: string,
+): Promise<SheetFullData> {
+  const range  = encodeURIComponent(tabName);
+  const fields = 'sheets.data.rowData.values(formattedValue,hyperlink,dataValidation)';
+  const res = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}` +
+    `?includeGridData=true&ranges=${range}&fields=${encodeURIComponent(fields)}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message ?? `Sheets full-data error ${res.status}`);
+  }
+  const data    = await res.json();
+  const rowData = data.sheets?.[0]?.data?.[0]?.rowData ?? [];
+
+  const values:     string[][]           = rowData.map((row: any) =>
+    (row.values ?? []).map((cell: any) => cell.formattedValue ?? ''));
+
+  const hyperlinks: (string | null)[][] = rowData.map((row: any) =>
+    (row.values ?? []).map((cell: any) => (cell.hyperlink as string | undefined) ?? null));
+
+  // Collect dropdown options per column from data validation
+  const maxCols = Math.max(...rowData.map((r: any) => (r.values ?? []).length), 0);
+  const colValidations: (string[] | null)[] = new Array(maxCols).fill(null);
+  for (const row of rowData) {
+    const cells = (row.values ?? []) as any[];
+    for (let ci = 0; ci < cells.length; ci++) {
+      if (colValidations[ci]) continue;
+      const dv = cells[ci]?.dataValidation;
+      if (dv?.condition?.type === 'ONE_OF_LIST') {
+        const opts = ((dv.condition.values ?? []) as any[])
+          .map((v: any) => String(v.userEnteredValue ?? '')).filter(Boolean);
+        if (opts.length > 0) colValidations[ci] = opts;
+      }
+    }
+  }
+
+  return { values, hyperlinks, colValidations };
+}

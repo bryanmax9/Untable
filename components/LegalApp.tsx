@@ -430,6 +430,17 @@ function PanelView({
   );
 }
 
+// Normalise any common date string to YYYY-MM-DD for <input type="date">
+function toISODate(v: string): string {
+  if (!v) return '';
+  // DD/MM/YYYY or DD-MM-YYYY
+  const m1 = v.trim().match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+  if (m1) return `${m1[3]}-${m1[2].padStart(2,'0')}-${m1[1].padStart(2,'0')}`;
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
+  return '';
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // DynamicField — renders any schema column with the right input control
 // ─────────────────────────────────────────────────────────────────────────────
@@ -506,12 +517,13 @@ function DynamicField({
     );
   }
 
-  // Date
+  // Date — normalise from any format (DD/MM/YYYY etc.) to YYYY-MM-DD for the picker
   if (col.type === 'date' || col.type === 'datetime') {
+    const iso = toISODate(value);
     return (
       <div>
         <div className="la-ep-label">{label}</div>
-        <input className="la-ep-input" type="date" value={value?.slice(0, 10) ?? ''} onChange={e => onChange(e.target.value)} />
+        <input className="la-ep-input" type="date" value={iso} onChange={e => onChange(e.target.value)} />
       </div>
     );
   }
@@ -2209,10 +2221,19 @@ function NewCaseModal({ section, sectionIdx, projectId, onClose, onAdded }: {
   async function save() {
     setSaving(true); setError(null);
     try {
-      // Send ALL column values directly — no role mapping needed
       const body: Record<string, string> = {};
       for (const col of cols) {
+        if (col.semanticRole === 'identifier') continue; // auto-assign below
         if (vals[col.id] !== undefined && vals[col.id] !== '') body[col.id] = vals[col.id];
+      }
+      // Auto-assign N°: max existing + 1
+      const identifierCol = cols.find(c => c.semanticRole === 'identifier');
+      if (identifierCol) {
+        const maxNum = section.records.reduce((m, r) => {
+          const n = parseInt(String(r[identifierCol.id] ?? '0'), 10);
+          return isNaN(n) ? m : Math.max(m, n);
+        }, 0);
+        body[identifierCol.id] = String(maxNum + 1);
       }
       const res = await fetch(`/api/projects/${projectId}/records?section=${sectionIdx}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -2236,9 +2257,11 @@ function NewCaseModal({ section, sectionIdx, projectId, onClose, onAdded }: {
           </div>
           <button className="la-btn la-btn-sm" onClick={onClose} style={{ flexShrink: 0 }}>✕</button>
         </div>
-        {/* Body — fully dynamic: every column from the sheet rendered by its type */}
+        {/* Body — dynamic: every column except auto-assigned identifiers (N°) */}
         <div className="la-ep-body">
-          {cols.map(col => (
+          {cols
+            .filter(col => col.semanticRole !== 'identifier') // N° auto-assigns, don't ask user
+            .map(col => (
             <DynamicField
               key={col.id}
               col={col}

@@ -118,6 +118,8 @@ export function getSheetInfo(values: string[][], sheetName: string): SheetInfo {
 export function parseGoogleSheetValues(
   values: string[][],
   sheetName: string,
+  hyperlinks?: (string | null)[][],
+  colValidations?: (string[] | null)[],
 ): { schema: Schema; rows: Row[] } {
   const { source: headerSource, dataStart } = findHeaderRow(values);
   const dataRows = values.slice(dataStart).filter(r => r.some(c => c != null && c !== ''));
@@ -159,11 +161,21 @@ export function parseGoogleSheetValues(
     if (usedIds.has(id)) id = `${id}_${i}`;
     usedIds.add(id);
 
-    const type = inferColumnType(colValues[i]);
+    let type = inferColumnType(colValues[i]);
     const semanticRole = detectSemanticRole(label);
-    const options: string[] | undefined = type === 'enum'
-      ? [...new Set(colValues[i].filter(v => v != null && v !== '').map(String))].slice(0, 30)
-      : undefined;
+
+    // Override with Google Sheets data validation (most reliable source for dropdowns)
+    const sheetColIdx = colIndexMap.length; // current column's original index (added below)
+    const validationOpts = colValidations?.[i];
+    if (validationOpts && validationOpts.length > 0) {
+      type = 'enum';
+    }
+
+    const options: string[] | undefined =
+      validationOpts?.length ? validationOpts :
+      type === 'enum'
+        ? [...new Set(colValues[i].filter(v => v != null && v !== '').map(String))].slice(0, 30)
+        : undefined;
 
     columns.push({ id, excelHeader: label, label, type, semanticRole, options });
     colIndexMap.push(i);
@@ -171,12 +183,20 @@ export function parseGoogleSheetValues(
 
   const language = detectLanguage(columns.map(c => c.label), sampleStrings);
 
-  const rows: Row[] = dataRows.map(rawRow => {
+  const rows: Row[] = dataRows.map((rawRow, rowOffset) => {
+    const sheetRowIdx = dataStart + rowOffset; // actual row index in the values array
     const row: Row = { _id: uuidv4() };
     for (let ci = 0; ci < columns.length; ci++) {
       const colIdx = colIndexMap[ci];
-      const col = columns[ci];
+      const col    = columns[ci];
       let val: unknown = rawRow[colIdx] ?? null;
+
+      // For URL/link columns, prefer the embedded hyperlink over the cell display text
+      if (col.type === 'url' || col.semanticRole === 'link') {
+        const hlinkVal = hyperlinks?.[sheetRowIdx]?.[colIdx];
+        if (hlinkVal) val = hlinkVal;
+      }
+
       if (typeof val === 'string') val = val.trim() || null;
       row[col.id] = val as Row[string];
     }

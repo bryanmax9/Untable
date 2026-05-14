@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { createClient } from '@/lib/supabase/server';
-import { getValidToken, sheetsGetValues } from '@/lib/server/google-api';
+import { getValidToken, sheetsGetFullData } from '@/lib/server/google-api';
 import { parseGoogleSheetValues } from '@/lib/server/google-sheets-reader';
 import { classifyDomain } from '@/lib/classifier/domain';
 import { bindColumns, buildColorMaps } from '@/lib/binder/binder';
@@ -23,12 +23,12 @@ export async function POST(req: NextRequest) {
   try {
     const token = await getValidToken(user.id);
 
-    // Fetch the sheet data from Google
-    const values = await sheetsGetValues(token, spreadsheetId, tabName);
+    // Fetch values + embedded hyperlinks + data validation rules in one request
+    const { values, hyperlinks, colValidations } = await sheetsGetFullData(token, spreadsheetId, tabName);
     if (!values.length) return NextResponse.json({ error: 'Sheet appears to be empty' }, { status: 400 });
 
-    // Run the same 3-layer pipeline as the Excel flow
-    const { schema, rows } = parseGoogleSheetValues(values, tabName);
+    // Run the same 3-layer pipeline, now with validation/hyperlink metadata
+    const { schema, rows } = parseGoogleSheetValues(values, tabName, hyperlinks, colValidations);
     const { domain }       = classifyDomain(schema.columns.map(c => c.excelHeader));
     const bindings         = bindColumns(schema, domain);
     const colorMaps        = buildColorMaps(schema, bindings);

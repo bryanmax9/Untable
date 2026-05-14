@@ -20,6 +20,19 @@ function allMatch(samples: unknown[], test: (v: unknown) => boolean): boolean {
   return samples.length > 0 && samples.every(test);
 }
 
+// Common date string formats — Google Sheets returns dates as formatted strings,
+// not Date objects. Covers DD/MM/YYYY (Latin America), MM/DD/YYYY, YYYY-MM-DD, etc.
+const DATE_STR_RES = [
+  /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4}$/,       // DD/MM/YYYY or MM/DD/YYYY
+  /^\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}$/,        // YYYY-MM-DD
+  /^\d{1,2}\s+de\s+\w+(\s+de)?\s+\d{4}$/i,        // 15 de enero de 2025
+];
+
+function isDateString(v: unknown): boolean {
+  if (typeof v !== 'string') return false;
+  return DATE_STR_RES.some(r => r.test(v.trim()));
+}
+
 export function inferColumnType(values: unknown[]): ColumnType {
   const nonEmpty = values.filter(v => v != null && v !== '');
   if (nonEmpty.length === 0) return 'text';
@@ -29,6 +42,11 @@ export function inferColumnType(values: unknown[]): ColumnType {
   if (allMatch(samples, isDateObj) || allMatch(samples, isExcelSerial)) return 'date';
 
   const strings = samples.map(String);
+
+  // Detect date strings BEFORE enum check — date columns in Latin American sheets
+  // often have few unique values (shared deadlines) which would incorrectly trigger enum
+  const dateStringCount = strings.filter(s => isDateString(s)).length;
+  if (dateStringCount / strings.length >= 0.7) return 'date';
 
   if (allMatch(strings, (v: unknown) => EMAIL_RE.test(String(v)))) return 'email';
   if (allMatch(strings, (v: unknown) => URL_RE.test(String(v)))) return 'url';
