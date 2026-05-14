@@ -9,7 +9,8 @@ import { writeRecords } from '@/lib/server/storage';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id: projectId } = await params;
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { data: project } = await admin
     .from('projects')
     .select('id, spreadsheet_id, sheet_tab')
-    .eq('id', params.id)
+    .eq('id', projectId)
     .maybeSingle();
 
   if (!project?.spreadsheet_id || !project?.sheet_tab) {
@@ -48,12 +49,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       schema_json:     schema,
       bindings_json:   bindings,
       color_maps_json: colorMaps,
-    }).eq('project_id', params.id).eq('section_idx', 0);
+    }).eq('project_id', projectId).eq('section_idx', 0);
     if (secErr) throw new Error(`Section update failed: ${secErr.message}`);
 
     // Re-write all records with _sheet_row so write-back is precise going forward
     const rowsWithIdx = rows.map((row, i) => ({ ...row, _sheet_row: i + 2 }));
-    await writeRecords(params.id, 0, rowsWithIdx);
+    await writeRecords(projectId, 0, rowsWithIdx);
 
     return NextResponse.json({ ok: true, rowCount: rows.length, domain });
   } catch (e) {
