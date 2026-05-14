@@ -2427,6 +2427,18 @@ export function LegalShell({ project }: { project: FullProject }) {
   const [showNew,          setShowNew]          = useState(false);
   const [activeClientName, setActiveClientName] = useState<string | null>(null);
 
+  // Auto-assign _sheet_row on mount when records were connected before row-tracking was added
+  useEffect(() => {
+    if (!project.spreadsheetId) return;
+    const hasSheetRows = section.records.some(r => (r as Record<string, unknown>)._sheet_row != null);
+    if (hasSheetRows || section.records.length === 0) return;
+    fetch(`/api/projects/${project.id}/reconnect`, { method: 'POST' })
+      .then(r => r.json())
+      .then(d => { if (d.ok) console.log('[auto-reconnect] assigned _sheet_row to', d.rowCount, 'rows'); })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function setCases(updater: (prev: LegalCase[]) => LegalCase[]) { setCasesRaw(updater); }
   function navTo(v: LegalViewId) {
     if (v !== 'detail' && v !== 'cliente-detail') setPrevView(v as LegalViewId);

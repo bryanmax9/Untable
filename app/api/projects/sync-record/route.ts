@@ -16,10 +16,15 @@ function norm(v: unknown): string {
   return String(v).trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+interface SchemaCol { id: string; excelHeader: string }
+
 async function findSheetRow(
-  token: string, spreadsheetId: string, sheetTab: string,
+  token: string,
+  spreadsheetId: string,
+  sheetTab: string,
   rowData: Record<string, unknown>,
-  schema: { columns: { id: string; excelHeader: string }[] },
+  columns: SchemaCol[],
+  identifierColId?: string,
 ): Promise<number | null> {
   const res = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetTab)}`,
@@ -31,12 +36,28 @@ async function findSheetRow(
   if (rows.length < 2) return null;
   const headers = rows[0];
 
-  // Build map: excelHeader → sheet column index (case-insensitive, trimmed)
+  // Case-insensitive header → column index map
   const headerIdx: Record<string, number> = {};
   headers.forEach((h, i) => { headerIdx[h.trim().toLowerCase()] = i; });
 
-  // Collect non-empty stored values for matching
-  const nonEmptyCols = schema.columns.filter(col => {
+  // ── Strategy 1: exact match on the identifier column (N°) ────────────────
+  if (identifierColId) {
+    const idVal = norm(rowData[identifierColId]);
+    if (idVal && idVal.length > 0) {
+      const idCol = columns.find(c => c.id === identifierColId);
+      if (idCol) {
+        const ci = headerIdx[idCol.excelHeader.trim().toLowerCase()];
+        if (ci !== undefined) {
+          for (let ri = 1; ri < rows.length; ri++) {
+            if (norm(rows[ri][ci]) === idVal) return ri + 1;
+          }
+        }
+      }
+    }
+  }
+
+  // ── Strategy 2: best-score content match (≥50% of non-empty columns) ─────
+  const nonEmpty = columns.filter(col => {
     if (col.id.startsWith('_')) return false;
     const v = rowData[col.id];
     return v != null && String(v).trim() !== '';
@@ -49,27 +70,26 @@ async function findSheetRow(
     const row = rows[ri];
     if (!row.some(c => c != null && c !== '')) continue;
     let matched = 0, total = 0;
-    for (const col of nonEmptyCols) {
+    for (const col of nonEmpty) {
       const ci = headerIdx[col.excelHeader.trim().toLowerCase()];
       if (ci === undefined) continue;
       total++;
-      const stored = norm(rowData[col.id]);
-      const sheet  = norm(row[ci]);
-      if (stored === sheet) matched++;
+      if (norm(rowData[col.id]) === norm(row[ci])) matched++;
     }
     if (total > 0) {
       const score = matched / total;
-      if (score >= 0.6 && score > bestScore) { bestScore = score; bestRow = ri + 1; }
+      if (score >= 0.5 && score > bestScore) { bestScore = score; bestRow = ri + 1; }
     }
   }
 
   if (bestRow) return bestRow;
 
-  // Last-resort: match by first non-empty text value that appears somewhere in a row
-  const firstVal = norm(nonEmptyCols[0] ? rowData[nonEmptyCols[0].id] : null);
-  if (firstVal.length > 3) {
+  // ── Strategy 3: any single field exact match (last resort) ───────────────
+  for (const col of nonEmpty.slice(0, 3)) {
+    const v = norm(rowData[col.id]);
+    if (v.length < 3) continue;
     for (let ri = 1; ri < rows.length; ri++) {
-      if (rows[ri].some(c => norm(c) === firstVal)) return ri + 1;
+      if (rows[ri].some(c => norm(c) === v)) return ri + 1;
     }
   }
 
@@ -93,10 +113,13 @@ export async function POST(req: NextRequest) {
   const { data: project } = await admin
     .from('projects').select('spreadsheet_id, sheet_tab, created_by').eq('id', projectId).maybeSingle();
 
-  if (!project?.spreadsheet_id || !project?.sheet_tab) return NextResponse.json({ ok: true, skipped: 'not_a_sheet_project' });
+  if (!project?.spreadsheet_id || !project?.sheet_tab) {
+    return NextResponse.json({ ok: true, skipped: 'not_a_sheet_project' });
+  }
 
   const { data: sections } = await admin
-    .from('sections').select('id, schema_json').eq('project_id', projectId).order('section_idx').limit(1);
+    .from('sections').select('id, schema_json, bindings_json')
+    .eq('project_id', projectId).order('section_idx').limit(1);
   const section = sections?.[0];
   if (!section) return NextResponse.json({ ok: true, skipped: 'no_section' });
 
@@ -105,19 +128,32 @@ export async function POST(req: NextRequest) {
 
   const ownerId = project.created_by ?? user.id;
   const token   = await getValidToken(ownerId);
-  const schema  = section.schema_json as { columns: { id: string; excelHeader: string }[] };
+  const schema  = section.schema_json as { columns: SchemaCol[] };
+  const bindings = (section.bindings_json ?? {}) as Record<string, string>;
+  const identifierColId = bindings.identifier;
 
-  // Find which sheet row this record corresponds to
+  // Find which sheet row this record maps to
   let sheetRow: number | null = (record?.row_data as Record<string, unknown>)?._sheet_row as number ?? null;
 
   if (!sheetRow) {
-    // Fallback: scan the sheet and match by content similarity (≥70% field match)
-    sheetRow = await findSheetRow(token, project.spreadsheet_id, project.sheet_tab, record?.row_data ?? {}, schema);
+    sheetRow = await findSheetRow(
+      token, project.spreadsheet_id, project.sheet_tab,
+      (record?.row_data ?? {}) as Record<string, unknown>,
+      schema.columns,
+      identifierColId,
+    );
+
+    // Persist the discovered row so future edits skip the scan
+    if (sheetRow && record) {
+      await admin.from('records').update({
+        row_data: { ...(record.row_data as object), _sheet_row: sheetRow },
+      }).eq('id', recordId);
+    }
   }
 
   if (!sheetRow) return NextResponse.json({ ok: true, skipped: 'row_not_found' });
 
-  // Get header row to map column names → column letters
+  // Map excelHeader → column letter (case-insensitive)
   const headerRes = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${project.spreadsheet_id}/values/${encodeURIComponent(project.sheet_tab)}!1:1`,
     { headers: { Authorization: `Bearer ${token}` } },
@@ -125,14 +161,14 @@ export async function POST(req: NextRequest) {
   if (!headerRes.ok) return NextResponse.json({ ok: true, skipped: 'header_fetch_failed' });
   const headers: string[] = (await headerRes.json()).values?.[0] ?? [];
   const headerIndex: Record<string, number> = {};
-  headers.forEach((h, i) => { headerIndex[h] = i; });
+  headers.forEach((h, i) => { headerIndex[h.trim().toLowerCase()] = i; });
 
   const data: { range: string; values: string[][] }[] = [];
   for (const [colId, value] of Object.entries(patch)) {
     if (colId.startsWith('_')) continue;
     const col = schema.columns.find(c => c.id === colId);
     if (!col) continue;
-    const ci = headerIndex[col.excelHeader];
+    const ci = headerIndex[col.excelHeader.trim().toLowerCase()];
     if (ci === undefined) continue;
     data.push({ range: `${project.sheet_tab}!${colLetter(ci)}${sheetRow}`, values: [[String(value ?? '')]] });
   }
