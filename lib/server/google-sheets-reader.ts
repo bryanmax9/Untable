@@ -189,7 +189,9 @@ export function parseGoogleSheetValues(
   const language = detectLanguage(columns.map(c => c.label), sampleStrings);
 
   const rows: Row[] = dataRowsWithIdx.map(({ row: rawRow, origIdx }) => {
-    const row: Row = { _id: uuidv4() };
+    // origIdx is 0-based index into the raw values array.
+    // origIdx + 1 = the 1-indexed Google Sheet row number (row 1 = first sheet row).
+    const row: Row = { _id: uuidv4(), _sheet_row: (origIdx + 1) as unknown as string };
     for (let ci = 0; ci < columns.length; ci++) {
       const colIdx = colIndexMap[ci];
       const col    = columns[ci];

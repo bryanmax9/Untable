@@ -18,6 +18,18 @@ function norm(v: unknown): string {
 
 interface SchemaCol { id: string; excelHeader: string }
 
+// Finds the actual header row in the sheet by matching against known column headers.
+// Sheets may have a title row before the real headers — never assume row 0 is the header.
+function detectHeaderRow(rows: string[][], schemaHeaders: string[]): { headers: string[]; headerIdx: number } {
+  const known = new Set(schemaHeaders.map(h => h.trim().toLowerCase()));
+  let bestIdx = 0, bestScore = 0;
+  for (let i = 0; i < Math.min(rows.length, 10); i++) {
+    const score = (rows[i] ?? []).filter(c => known.has((c ?? '').trim().toLowerCase())).length;
+    if (score > bestScore) { bestScore = score; bestIdx = i; }
+  }
+  return { headers: rows[bestIdx] ?? [], headerIdx: bestIdx };
+}
+
 async function findSheetRow(
   token: string,
   spreadsheetId: string,
@@ -31,32 +43,36 @@ async function findSheetRow(
     { headers: { Authorization: `Bearer ${token}` } },
   );
   if (!res.ok) return null;
-  const data = await res.json();
-  const rows: string[][] = data.values ?? [];
-  if (rows.length < 2) return null;
-  const headers = rows[0];
+  const allRows: string[][] = (await res.json()).values ?? [];
+  if (allRows.length < 2) return null;
 
-  // Case-insensitive header → column index map
-  const headerIdx: Record<string, number> = {};
-  headers.forEach((h, i) => { headerIdx[h.trim().toLowerCase()] = i; });
+  // Find the real header row (not necessarily row 0)
+  const schemaHeaders = columns.map(c => c.excelHeader);
+  const { headers, headerIdx } = detectHeaderRow(allRows, schemaHeaders);
 
-  // ── Strategy 1: exact match on the identifier column (N°) ────────────────
+  const headerMap: Record<string, number> = {};
+  headers.forEach((h, i) => { headerMap[h.trim().toLowerCase()] = i; });
+
+  // Data rows start after the header row
+  const dataRows = allRows.slice(headerIdx + 1);
+
+  // Strategy 1: exact match on identifier column
   if (identifierColId) {
     const idVal = norm(rowData[identifierColId]);
-    if (idVal && idVal.length > 0) {
+    if (idVal) {
       const idCol = columns.find(c => c.id === identifierColId);
       if (idCol) {
-        const ci = headerIdx[idCol.excelHeader.trim().toLowerCase()];
+        const ci = headerMap[idCol.excelHeader.trim().toLowerCase()];
         if (ci !== undefined) {
-          for (let ri = 1; ri < rows.length; ri++) {
-            if (norm(rows[ri][ci]) === idVal) return ri + 1;
+          for (let ri = 0; ri < dataRows.length; ri++) {
+            if (norm(dataRows[ri][ci]) === idVal) return headerIdx + 1 + ri + 1; // 1-indexed sheet row
           }
         }
       }
     }
   }
 
-  // ── Strategy 2: best-score content match (≥50% of non-empty columns) ─────
+  // Strategy 2: best-score content match ≥50%
   const nonEmpty = columns.filter(col => {
     if (col.id.startsWith('_')) return false;
     const v = rowData[col.id];
@@ -66,30 +82,29 @@ async function findSheetRow(
   let bestRow: number | null = null;
   let bestScore = -1;
 
-  for (let ri = 1; ri < rows.length; ri++) {
-    const row = rows[ri];
-    if (!row.some(c => c != null && c !== '')) continue;
+  for (let ri = 0; ri < dataRows.length; ri++) {
+    const row = dataRows[ri];
+    if (!row?.some(c => c != null && c !== '')) continue;
     let matched = 0, total = 0;
     for (const col of nonEmpty) {
-      const ci = headerIdx[col.excelHeader.trim().toLowerCase()];
+      const ci = headerMap[col.excelHeader.trim().toLowerCase()];
       if (ci === undefined) continue;
       total++;
       if (norm(rowData[col.id]) === norm(row[ci])) matched++;
     }
     if (total > 0) {
       const score = matched / total;
-      if (score >= 0.5 && score > bestScore) { bestScore = score; bestRow = ri + 1; }
+      if (score >= 0.5 && score > bestScore) { bestScore = score; bestRow = headerIdx + 1 + ri + 1; }
     }
   }
-
   if (bestRow) return bestRow;
 
-  // ── Strategy 3: any single field exact match (last resort) ───────────────
+  // Strategy 3: single field match on first 3 non-empty columns
   for (const col of nonEmpty.slice(0, 3)) {
     const v = norm(rowData[col.id]);
     if (v.length < 3) continue;
-    for (let ri = 1; ri < rows.length; ri++) {
-      if (rows[ri].some(c => norm(c) === v)) return ri + 1;
+    for (let ri = 0; ri < dataRows.length; ri++) {
+      if ((dataRows[ri] ?? []).some(c => norm(c) === v)) return headerIdx + 1 + ri + 1;
     }
   }
 
@@ -131,6 +146,7 @@ export async function POST(req: NextRequest) {
   const schema  = section.schema_json as { columns: SchemaCol[] };
   const bindings = (section.bindings_json ?? {}) as Record<string, string>;
   const identifierColId = bindings.identifier;
+  const schemaHeaders = schema.columns.map(c => c.excelHeader);
 
   // Find which sheet row this record maps to
   let sheetRow: number | null = (record?.row_data as Record<string, unknown>)?._sheet_row as number ?? null;
@@ -142,8 +158,7 @@ export async function POST(req: NextRequest) {
       schema.columns,
       identifierColId,
     );
-
-    // Persist the discovered row so future edits skip the scan
+    // Persist to avoid re-scanning next time
     if (sheetRow && record) {
       await admin.from('records').update({
         row_data: { ...(record.row_data as object), _sheet_row: sheetRow },
@@ -153,13 +168,15 @@ export async function POST(req: NextRequest) {
 
   if (!sheetRow) return NextResponse.json({ ok: true, skipped: 'row_not_found' });
 
-  // Map excelHeader → column letter (case-insensitive)
+  // Fetch first 10 rows to detect the actual header row
   const headerRes = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${project.spreadsheet_id}/values/${encodeURIComponent(project.sheet_tab)}!1:1`,
+    `https://sheets.googleapis.com/v4/spreadsheets/${project.spreadsheet_id}/values/${encodeURIComponent(project.sheet_tab)}!1:10`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
   if (!headerRes.ok) return NextResponse.json({ ok: true, skipped: 'header_fetch_failed' });
-  const headers: string[] = (await headerRes.json()).values?.[0] ?? [];
+  const first10: string[][] = (await headerRes.json()).values ?? [];
+  const { headers } = detectHeaderRow(first10, schemaHeaders);
+
   const headerIndex: Record<string, number> = {};
   headers.forEach((h, i) => { headerIndex[h.trim().toLowerCase()] = i; });
 
@@ -173,7 +190,7 @@ export async function POST(req: NextRequest) {
     data.push({ range: `${project.sheet_tab}!${colLetter(ci)}${sheetRow}`, values: [[String(value ?? '')]] });
   }
 
-  if (data.length === 0) return NextResponse.json({ ok: true, skipped: 'nothing_to_update' });
+  if (data.length === 0) return NextResponse.json({ ok: true, skipped: 'nothing_to_update', sheetRow, headers: headers.slice(0, 5) });
 
   const updateRes = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${project.spreadsheet_id}/values:batchUpdate`,

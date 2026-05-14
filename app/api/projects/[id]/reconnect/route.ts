@@ -52,9 +52,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }).eq('project_id', projectId).eq('section_idx', 0);
     if (secErr) throw new Error(`Section update failed: ${secErr.message}`);
 
-    // Re-write all records with _sheet_row so write-back is precise going forward
-    const rowsWithIdx = rows.map((row, i) => ({ ...row, _sheet_row: i + 2 }));
-    await writeRecords(projectId, 0, rowsWithIdx);
+    // _sheet_row is set correctly by parseGoogleSheetValues (origIdx + 1)
+    await writeRecords(projectId, 0, rows);
 
     return NextResponse.json({ ok: true, rowCount: rows.length, domain });
   } catch (e) {
