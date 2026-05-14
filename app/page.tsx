@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useLang, T } from '@/lib/useLang';
+import { LangToggle } from '@/components/LangToggle';
 
 interface Org {
   id: string; name: string; invite_code: string;
@@ -249,6 +250,7 @@ export default function HomePage() {
         <span>·</span>
         <span>© {new Date().getFullYear()} Untable</span>
       </footer>
+      <LangToggle />
     </div>
   );
 }

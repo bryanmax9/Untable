@@ -575,6 +575,7 @@ function EditPanel({
   });
   const [saving, setSaving]          = useState(false);
   const [error, setError]            = useState<string | null>(null);
+  const [syncMsg, setSyncMsg]        = useState<string | null>(null);
   const [showDrivePicker, setShowDP] = useState(false);
 
   const set = (id: string | undefined, v: string) => {
@@ -583,7 +584,7 @@ function EditPanel({
   };
 
   async function save() {
-    setSaving(true); setError(null);
+    setSaving(true); setError(null); setSyncMsg(null);
     try {
       const body: Record<string, string> = {};
       for (const [k, v] of Object.entries(draft)) if (k) body[k] = v;
@@ -596,16 +597,24 @@ function EditPanel({
       onSaved(data);
 
       if (spreadsheetId) {
+        setSyncMsg('Sincronizando con Google Sheets…');
         fetch('/api/projects/sync-record', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ projectId, recordId: caso._id, patch: body }),
         }).then(async r => {
           const d = await r.json().catch(() => ({}));
-          if (!r.ok) console.error('[sync-record] error:', d);
-          else if (d.skipped) console.warn('[sync-record] skipped:', d.skipped);
-          else console.log('[sync-record] ok, row', d.sheetRow, 'updated', d.updated, 'cols');
-        }).catch(e => console.error('[sync-record] network error:', e));
+          if (!r.ok) {
+            setSyncMsg('⚠ Error al sincronizar con Google Sheets');
+          } else if (d.skipped === 'row_not_found') {
+            setSyncMsg('⚠ Fila no encontrada — usa "Sincronizar hoja" en el menú lateral primero');
+          } else if (d.skipped) {
+            setSyncMsg(`⚠ Sync omitido: ${d.skipped}`);
+          } else {
+            setSyncMsg(`✓ Guardado en Google Sheets (fila ${d.sheetRow})`);
+            setTimeout(() => setSyncMsg(null), 3000);
+          }
+        }).catch(() => setSyncMsg('⚠ Error de red al sincronizar'));
       }
     } catch (e) {
       setError(String(e));
@@ -669,6 +678,11 @@ function EditPanel({
         </div>
 
         {/* Footer */}
+        {syncMsg && (
+          <div style={{ padding: '6px 16px', fontSize: 11, color: syncMsg.startsWith('✓') ? '#085041' : '#7a3a00', background: syncMsg.startsWith('✓') ? '#e8f5f0' : '#fff8e6', borderTop: '0.5px solid rgba(0,0,0,0.06)' }}>
+            {syncMsg}
+          </div>
+        )}
         <div className="la-ep-footer">
           <button className="la-btn" onClick={onClose}>Cancelar</button>
           <button className="la-btn la-btn-primary" disabled={saving} onClick={save}>

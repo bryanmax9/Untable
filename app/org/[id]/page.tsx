@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { fmtDate } from '@/lib/utils';
 import { useLang, T } from '@/lib/useLang';
+import { LangToggle } from '@/components/LangToggle';
 
 interface Project { id: string; name: string; original_filename: string; created_at: string; }
 interface OrgData {
@@ -264,6 +265,7 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
           </Link>
         </div>
       )}
+    <LangToggle />
     </Shell>
   );
 }

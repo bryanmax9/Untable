@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLang, T } from '@/lib/useLang';
+import { LangToggle } from '@/components/LangToggle';
 
 type Mode = 'choose' | 'create' | 'join';
 
@@ -138,6 +139,7 @@ export default function OnboardingPage() {
         .auth-btn:hover:not(:disabled){opacity:.9}
         .auth-btn:disabled{opacity:.6;cursor:default}
       `}</style>
+      <LangToggle />
     </div>
   );
 }
