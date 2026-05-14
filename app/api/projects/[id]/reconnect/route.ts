@@ -5,12 +5,12 @@ import { getValidToken, sheetsGetFullData } from '@/lib/server/google-api';
 import { parseGoogleSheetValues } from '@/lib/server/google-sheets-reader';
 import { classifyDomain } from '@/lib/classifier/domain';
 import { bindColumns, buildColorMaps } from '@/lib/binder/binder';
+import { v4 as uuidv4 } from 'uuid';
 
 export const runtime = 'nodejs';
 
 function norm(v: unknown): string {
-  if (v == null) return '';
-  return String(v).trim().toLowerCase().replace(/\s+/g, ' ');
+  return String(v ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const bindings = bindColumns(schema, domain);
     const colorMaps = buildColorMaps(schema, bindings);
 
-    // Update section schema without touching records
+    // Update section schema
     const { data: sectionData, error: secErr } = await admin.from('sections')
       .update({ domain, schema_json: schema, bindings_json: bindings, color_maps_json: colorMaps })
       .eq('project_id', projectId).eq('section_idx', 0)
@@ -52,52 +52,72 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (secErr) throw new Error(`Section update failed: ${secErr.message}`);
 
     const sectionId = sectionData.id;
+    const identifierColId = (bindings as Record<string, string>).identifier;
 
-    // Fetch all existing records (keep their UUIDs — do NOT delete/re-insert)
+    // Fetch all existing DB records
     const { data: existingRecords } = await admin
       .from('records').select('id, row_data').eq('section_id', sectionId);
+    const dbRecords = existingRecords ?? [];
 
-    // Build index of sheet rows keyed by normalized cell values for fast lookup
-    // rows[] from parser already have _sheet_row set to the correct 1-indexed sheet row
-    const sheetIndex: Map<string, number> = new Map();
-    for (const row of rows) {
-      const sheetRow = (row._sheet_row as unknown as number);
-      // Index by every non-empty field value so we can match existing records
-      for (const [k, v] of Object.entries(row)) {
-        if (k.startsWith('_') || !v) continue;
-        const key = `${k}::${norm(v)}`;
-        if (!sheetIndex.has(key)) sheetIndex.set(key, sheetRow);
+    // Build a lookup: identifier value → DB record id
+    const dbByIdentifier = new Map<string, { id: string; row_data: Record<string, unknown> }>();
+    const dbBySheetRow   = new Map<number, { id: string; row_data: Record<string, unknown> }>();
+    for (const rec of dbRecords) {
+      const rd = (rec.row_data ?? {}) as Record<string, unknown>;
+      if (identifierColId) {
+        const idVal = norm(rd[identifierColId]);
+        if (idVal) dbByIdentifier.set(idVal, { id: rec.id, row_data: rd });
       }
+      const sr = rd._sheet_row as number | undefined;
+      if (sr) dbBySheetRow.set(sr, { id: rec.id, row_data: rd });
     }
 
-    // For each existing record, find its correct _sheet_row by matching field values
-    let updated = 0;
-    for (const rec of existingRecords ?? []) {
-      const rowData = (rec.row_data ?? {}) as Record<string, unknown>;
-      let bestSheetRow: number | null = null;
-      let bestScore = 0;
+    const matchedDbIds = new Set<string>();
+    const upserts: { id: string; section_id: string; row_data: Record<string, unknown> }[] = [];
 
-      // Count how many field values match each candidate sheet row
-      const scores: Map<number, number> = new Map();
-      for (const [k, v] of Object.entries(rowData)) {
-        if (k.startsWith('_') || !v) continue;
-        const key = `${k}::${norm(v)}`;
-        const sr = sheetIndex.get(key);
-        if (sr) scores.set(sr, (scores.get(sr) ?? 0) + 1);
+    for (const sheetRow of rows) {
+      const sheetRowData = { ...sheetRow } as Record<string, unknown>;
+      delete sheetRowData._id;
+
+      // Find matching DB record: by identifier → by _sheet_row → no match (new)
+      let dbMatch: { id: string; row_data: Record<string, unknown> } | undefined;
+
+      if (identifierColId) {
+        const idVal = norm(sheetRow[identifierColId] as unknown);
+        if (idVal) dbMatch = dbByIdentifier.get(idVal);
       }
-      for (const [sr, score] of scores) {
-        if (score > bestScore) { bestScore = score; bestSheetRow = sr; }
+      if (!dbMatch) {
+        const sr = sheetRow._sheet_row as unknown as number | undefined;
+        if (sr) dbMatch = dbBySheetRow.get(sr);
       }
 
-      if (bestSheetRow && bestScore >= 1) {
-        await admin.from('records')
-          .update({ row_data: { ...rowData, _sheet_row: bestSheetRow } })
-          .eq('id', rec.id);
-        updated++;
-      }
+      const recordId = dbMatch?.id ?? uuidv4();
+      if (dbMatch) matchedDbIds.add(dbMatch.id);
+
+      upserts.push({ id: recordId, section_id: sectionId, row_data: sheetRowData });
     }
 
-    return NextResponse.json({ ok: true, rowCount: rows.length, updatedRecords: updated, domain });
+    // Delete DB records that no longer exist in the sheet
+    const toDelete = dbRecords.filter(r => !matchedDbIds.has(r.id)).map(r => r.id);
+    if (toDelete.length > 0) {
+      await admin.from('records').delete().in('id', toDelete);
+    }
+
+    // Upsert all sheet rows in batches of 200
+    const BATCH = 200;
+    for (let i = 0; i < upserts.length; i += BATCH) {
+      const { error } = await admin.from('records')
+        .upsert(upserts.slice(i, i + BATCH), { onConflict: 'id' });
+      if (error) throw new Error(`Record upsert failed: ${error.message}`);
+    }
+
+    return NextResponse.json({
+      ok: true,
+      rowCount: rows.length,
+      inserted: upserts.filter(u => !matchedDbIds.has(u.id) && dbRecords.some(d => d.id === u.id) === false).length,
+      deleted: toDelete.length,
+      domain,
+    });
   } catch (e) {
     console.error('Reconnect error:', e);
     return NextResponse.json({ error: String(e) }, { status: 500 });
