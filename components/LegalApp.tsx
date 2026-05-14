@@ -2055,8 +2055,10 @@ function LinkIcon({ url }: { url: string }) {
 }
 
 function DocumentosView({ cases }: { cases: LegalCase[] }) {
-  // Accept any valid http/https URL — not just Google Drive
-  const withLinks = cases.filter(c => c.link && /^https?:\/\//i.test(c.link));
+  // Show all cases that have ANY link value (URL or reference text).
+  // After reconnecting the sheet, links will be proper Drive URLs.
+  const withLinks = cases.filter(c => c.link && c.link.trim().length > 0);
+  const isUrl = (s: string) => /^https?:\/\//i.test(s);
 
   // Group by domain for the right-side panel
   const byDomain: Record<string, LegalCase[]> = {};
@@ -2083,7 +2085,7 @@ function DocumentosView({ cases }: { cases: LegalCase[] }) {
           </div>
           {withLinks.length === 0 ? (
             <p style={{ fontSize: 13, color: '#9c9a92' }}>
-              Sin documentos vinculados. Agrega URLs en la columna LINK del Excel.
+              Sin referencias vinculadas. Reconecta la hoja para cargar los enlaces de Drive.
             </p>
           ) : (
             withLinks.map(c => (
@@ -2097,14 +2099,17 @@ function DocumentosView({ cases }: { cases: LegalCase[] }) {
                   </div>
                   <div style={{ fontSize: 11, color: '#9c9a92', marginTop: 2 }}>
                     {c.client && <span>{c.client} · </span>}
-                    <span>{linkTypeLabel(c.link)}</span>
+                    <span>{isUrl(c.link) ? linkTypeLabel(c.link) : 'Referencia'}</span>
                   </div>
                 </div>
-                <a href={c.link} target="_blank" rel="noopener noreferrer"
-                  className="la-btn la-btn-sm" onClick={e => e.stopPropagation()}
-                  style={{ textDecoration: 'none' }}>
-                  Abrir ↗
-                </a>
+                {isUrl(c.link) ? (
+                  <a href={c.link} target="_blank" rel="noopener noreferrer"
+                    className="la-btn la-btn-sm" style={{ textDecoration: 'none' }}>
+                    Abrir ↗
+                  </a>
+                ) : (
+                  <span className="la-btn la-btn-sm" style={{ color: '#9c9a92', cursor: 'default' }}>{truncate(c.link, 16)}</span>
+                )}
               </div>
             ))
           )}
@@ -2132,12 +2137,18 @@ function DocumentosView({ cases }: { cases: LegalCase[] }) {
                 </div>
                 <div style={{ paddingLeft: 36, display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
                   {domainCases.map(c => (
-                    <a key={c._id} href={c.link} target="_blank" rel="noopener noreferrer"
-                      style={{ fontSize: 12, color: '#534AB7', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
-                      onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
-                      onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}>
-                      ↗ {truncate(c.description || c.num || c.link, 45)}
-                    </a>
+                    isUrl(c.link) ? (
+                      <a key={c._id} href={c.link} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: 12, color: '#534AB7', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
+                        onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                        onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}>
+                        ↗ {truncate(c.description || c.num || c.link, 45)}
+                      </a>
+                    ) : (
+                      <span key={c._id} style={{ fontSize: 12, color: '#9c9a92', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                        📎 {c.link}
+                      </span>
+                    )
                   ))}
                 </div>
               </div>

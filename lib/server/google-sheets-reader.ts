@@ -122,8 +122,15 @@ export function parseGoogleSheetValues(
   colValidations?: (string[] | null)[],
 ): { schema: Schema; rows: Row[] } {
   const { source: headerSource, dataStart } = findHeaderRow(values);
-  const dataRows = values.slice(dataStart).filter(r => r.some(c => c != null && c !== ''));
 
+  // Preserve original row indices so hyperlink lookup stays correct
+  // even when some rows are empty and filtered out.
+  const dataRowsWithIdx = values
+    .slice(dataStart)
+    .map((row, i) => ({ row, origIdx: dataStart + i }))
+    .filter(({ row }) => row.some(c => c != null && c !== ''));
+
+  const dataRows = dataRowsWithIdx.map(d => d.row);
   const maxDataWidth = Math.max(headerSource.length, ...dataRows.map(r => r.length));
 
   const colLabels: string[] = Array.from({ length: maxDataWidth }, (_, i) => {
@@ -164,12 +171,10 @@ export function parseGoogleSheetValues(
     let type = inferColumnType(colValues[i]);
     const semanticRole = detectSemanticRole(label);
 
-    // Override with Google Sheets data validation (most reliable source for dropdowns)
-    const sheetColIdx = colIndexMap.length; // current column's original index (added below)
+    // Google Sheets data validation is the most reliable source for dropdown detection.
+    // Override inferred type when the sheet has an explicit ONE_OF_LIST rule.
     const validationOpts = colValidations?.[i];
-    if (validationOpts && validationOpts.length > 0) {
-      type = 'enum';
-    }
+    if (validationOpts?.length) type = 'enum';
 
     const options: string[] | undefined =
       validationOpts?.length ? validationOpts :
@@ -183,17 +188,17 @@ export function parseGoogleSheetValues(
 
   const language = detectLanguage(columns.map(c => c.label), sampleStrings);
 
-  const rows: Row[] = dataRows.map((rawRow, rowOffset) => {
-    const sheetRowIdx = dataStart + rowOffset; // actual row index in the values array
+  const rows: Row[] = dataRowsWithIdx.map(({ row: rawRow, origIdx }) => {
     const row: Row = { _id: uuidv4() };
     for (let ci = 0; ci < columns.length; ci++) {
       const colIdx = colIndexMap[ci];
       const col    = columns[ci];
       let val: unknown = rawRow[colIdx] ?? null;
 
-      // For URL/link columns, prefer the embedded hyperlink over the cell display text
+      // For link/URL columns prefer the embedded Drive hyperlink URL over cell display text.
+      // origIdx is the real sheet row so the hyperlink matrix lookup is always correct.
       if (col.type === 'url' || col.semanticRole === 'link') {
-        const hlinkVal = hyperlinks?.[sheetRowIdx]?.[colIdx];
+        const hlinkVal = hyperlinks?.[origIdx]?.[colIdx];
         if (hlinkVal) val = hlinkVal;
       }
 
