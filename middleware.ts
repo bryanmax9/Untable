@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password', '/auth/callback'];
+const PUBLIC_PATHS = ['/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password', '/auth/callback', '/privacy', '/terms'];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -24,10 +24,11 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
 
-  // Allow public auth paths always
+  // Allow public paths always
   if (PUBLIC_PATHS.some(p => path.startsWith(p))) {
-    // Redirect logged-in users away from auth pages
-    if (user && path !== '/auth/callback') {
+    // Redirect logged-in users away from auth pages (but not from /privacy or /terms)
+    const isAuthPage = path.startsWith('/auth/');
+    if (user && isAuthPage && path !== '/auth/callback') {
       return NextResponse.redirect(new URL('/', request.url));
     }
     return response;
