@@ -14,6 +14,7 @@ interface LegalCase {
   description: string; area: string; action: string; link: string;
   notes: string; pm: string; hechos: string; procedimiento: string;
   horario: string; fechaSolicitud: string;
+  _raw: Row; // all raw column values for search
 }
 
 type LegalViewId = 'panel' | 'clientes' | 'cliente-detail' | 'casos' | 'detail' | 'plazos' | 'tareas' | 'documentos' | 'contratos' | 'equipo';
@@ -65,6 +66,7 @@ function rowToCase(row: Row, b: Bindings, section: SectionWithRecords): LegalCas
     procedimiento: g(row, cols.find(c => c.id.includes('procedimiento'))?.id),
     horario:       g(row, cols.find(c => c.id.includes('horario'))?.id),
     fechaSolicitud: g(row, cols.find(c => c.id.includes('fecha_de_solicitud') || c.id.includes('fecha_solicitud'))?.id),
+    _raw: row,
   };
 }
 
@@ -716,6 +718,9 @@ function RegistrosView({
   const [statusFilter,  setStatusFilter]  = useState('');
   const [editCase,      setEditCase]       = useState<LegalCase | null>(null);
   const [page,          setPage]           = useState(0);
+  const [localSearch,   setLocalSearch]    = useState('');
+
+  const effectiveSearch = localSearch || search;
 
   const carpetaOpts = [...new Set(cases.map(c => c.carpeta).filter(Boolean))];
   const statusOpts  = [...new Set(cases.map(c => c.status).filter(Boolean))];
@@ -723,10 +728,13 @@ function RegistrosView({
   const filtered = cases.filter(c => {
     if (carpetaFilter && c.carpeta !== carpetaFilter) return false;
     if (statusFilter  && c.status  !== statusFilter)  return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return [c.description, c.client, c.carpeta, c.status, c.assignee, c.num, c.action, c.area]
+    if (effectiveSearch) {
+      const q = effectiveSearch.toLowerCase();
+      const inBound = [c.description, c.client, c.carpeta, c.status, c.assignee, c.num, c.action, c.area]
         .some(v => v && v.toLowerCase().includes(q));
+      const inRaw = c._raw && Object.values(c._raw).some(v =>
+        v != null && String(v).toLowerCase().includes(q));
+      return inBound || inRaw;
     }
     return true;
   });
@@ -734,7 +742,7 @@ function RegistrosView({
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  useEffect(() => { setPage(0); }, [carpetaFilter, statusFilter, search]);
+  useEffect(() => { setPage(0); }, [carpetaFilter, statusFilter, effectiveSearch]);
 
   return (
     <>
@@ -756,6 +764,12 @@ function RegistrosView({
               </button>
             ))}
           </div>
+          <input
+            value={localSearch}
+            onChange={e => setLocalSearch(e.target.value)}
+            placeholder="Buscar casos…"
+            style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, border: '0.5px solid rgba(0,0,0,0.18)', outline: 'none', minWidth: 180, background: '#fff' }}
+          />
         </div>
         <select
           value={statusFilter}
@@ -2455,6 +2469,7 @@ export function LegalShell({ project }: { project: FullProject }) {
       const data = await res.json();
       if (!res.ok) { setReconnectMsg('Error: ' + (data.error ?? 'unknown')); return; }
       setReconnectMsg(`✓ Sincronizado — ${data.updatedRecords ?? data.rowCount} filas actualizadas`);
+      setTimeout(() => window.location.reload(), 1500);
     } catch (e) {
       setReconnectMsg('Error de red');
     } finally {
@@ -2658,7 +2673,7 @@ export function LegalShell({ project }: { project: FullProject }) {
       {showNew && (
         <NewCaseModal section={section} sectionIdx={sectionIdx >= 0 ? sectionIdx : 0}
           projectId={project.id} onClose={() => setShowNew(false)}
-          onAdded={c => { setCases(prev => [...prev, c]); setShowNew(false); navTo('casos'); }} />
+          onAdded={c => { setCases(prev => [...prev, c]); setShowNew(false); setSearch(''); navTo('casos'); }} />
       )}
     </div>
   );
