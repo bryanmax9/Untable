@@ -44,8 +44,8 @@ function rowToCase(row: Row, b: Bindings, section: SectionWithRecords): LegalCas
   const rawDesc = gAny(b.description, descCol?.id);
   // Link: may contain the expediente reference number
   const rawLink = gAny(b.link);
-  // The "title" shown for the case: description if available, else link ref, else action
-  const title = rawDesc || rawLink || gAny(b.action) || gAny(b.notes);
+  // Title shown in the table: description, then action/notes. Never use link as title.
+  const title = rawDesc || gAny(b.action) || gAny(b.notes) || g(row, b.identifier);
 
   return {
     _id:           row._id as string,
@@ -768,7 +768,7 @@ function RegistrosView({
             value={localSearch}
             onChange={e => setLocalSearch(e.target.value)}
             placeholder="Buscar casos…"
-            style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, border: '0.5px solid rgba(0,0,0,0.18)', outline: 'none', minWidth: 180, background: '#fff' }}
+            style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, border: '0.5px solid rgba(0,0,0,0.18)', outline: 'none', minWidth: 180, background: '#fff', color: '#1a1916' }}
           />
         </div>
         <select
@@ -2087,18 +2087,40 @@ function LinkIcon({ url }: { url: string }) {
   );
 }
 
-function DocumentosView({ cases }: { cases: LegalCase[] }) {
-  // Show all cases that have ANY link value (URL or reference text).
-  // After reconnecting the sheet, links will be proper Drive URLs.
-  const withLinks = cases.filter(c => c.link && c.link.trim().length > 0);
+function DocumentosView({ cases, section }: { cases: LegalCase[]; section?: SectionWithRecords }) {
   const isUrl = (s: string) => /^https?:\/\//i.test(s);
 
+  // Find the best URL for each case by checking:
+  // 1. The bound link column (c.link)
+  // 2. Any url/link-type column in the raw row
+  const urlCols = section?.schema.columns.filter(c =>
+    c.type === 'url' || c.semanticRole === 'link'
+  ) ?? [];
+
+  function bestUrl(c: LegalCase): string {
+    if (c.link && c.link.trim()) return c.link;
+    for (const col of urlCols) {
+      const v = String((c._raw as Record<string, unknown>)?.[col.id] ?? '').trim();
+      if (v) return v;
+    }
+    // Last resort: any URL-looking value in the raw row
+    for (const v of Object.values((c._raw as Record<string, unknown>) ?? {})) {
+      const s = String(v ?? '').trim();
+      if (isUrl(s)) return s;
+    }
+    return '';
+  }
+
+  const withLinks = cases
+    .map(c => ({ c, url: bestUrl(c) }))
+    .filter(({ url }) => url.trim().length > 0);
+
   // Group by domain for the right-side panel
-  const byDomain: Record<string, LegalCase[]> = {};
-  for (const c of withLinks) {
-    const d = linkTypeLabel(c.link);
+  const byDomain: Record<string, { c: LegalCase; url: string }[]> = {};
+  for (const item of withLinks) {
+    const d = linkTypeLabel(item.url);
     if (!byDomain[d]) byDomain[d] = [];
-    byDomain[d].push(c);
+    byDomain[d].push(item);
   }
   const domainEntries = Object.entries(byDomain).sort((a, b) => b[1].length - a[1].length);
 
@@ -2121,10 +2143,10 @@ function DocumentosView({ cases }: { cases: LegalCase[] }) {
               Sin referencias vinculadas. Reconecta la hoja para cargar los enlaces de Drive.
             </p>
           ) : (
-            withLinks.map(c => (
+            withLinks.map(({ c, url }) => (
               <div key={c._id} className="la-file-row">
                 <div className={`la-file-icon ${carpetaClass(c.carpeta)}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <LinkIcon url={c.link} />
+                  <LinkIcon url={url} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -2132,16 +2154,16 @@ function DocumentosView({ cases }: { cases: LegalCase[] }) {
                   </div>
                   <div style={{ fontSize: 11, color: '#9c9a92', marginTop: 2 }}>
                     {c.client && <span>{c.client} · </span>}
-                    <span>{isUrl(c.link) ? linkTypeLabel(c.link) : 'Referencia'}</span>
+                    <span>{isUrl(url) ? linkTypeLabel(url) : 'Referencia'}</span>
                   </div>
                 </div>
-                {isUrl(c.link) ? (
-                  <a href={c.link} target="_blank" rel="noopener noreferrer"
+                {isUrl(url) ? (
+                  <a href={url} target="_blank" rel="noopener noreferrer"
                     className="la-btn la-btn-sm" style={{ textDecoration: 'none' }}>
                     Abrir ↗
                   </a>
                 ) : (
-                  <span className="la-btn la-btn-sm" style={{ color: '#9c9a92', cursor: 'default' }}>{truncate(c.link, 16)}</span>
+                  <span className="la-btn la-btn-sm" style={{ color: '#9c9a92', cursor: 'default' }}>{truncate(url, 16)}</span>
                 )}
               </div>
             ))
@@ -2160,7 +2182,7 @@ function DocumentosView({ cases }: { cases: LegalCase[] }) {
               <div key={domain} className="la-case-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
                   <div className="la-case-avatar la-av-purple" style={{ borderRadius: 6, flexShrink: 0 }}>
-                    <LinkIcon url={domainCases[0].link} />
+                    <LinkIcon url={domainCases[0].url} />
                   </div>
                   <div className="la-case-info" style={{ flex: 1, minWidth: 0 }}>
                     <div className="la-case-title">{domain}</div>
@@ -2169,17 +2191,17 @@ function DocumentosView({ cases }: { cases: LegalCase[] }) {
                   <span className="la-badge la-badge-gray">{domainCases.length}</span>
                 </div>
                 <div style={{ paddingLeft: 36, display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
-                  {domainCases.map(c => (
-                    isUrl(c.link) ? (
-                      <a key={c._id} href={c.link} target="_blank" rel="noopener noreferrer"
+                  {domainCases.map(({ c, url }) => (
+                    isUrl(url) ? (
+                      <a key={c._id} href={url} target="_blank" rel="noopener noreferrer"
                         style={{ fontSize: 12, color: '#534AB7', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
                         onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                         onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}>
-                        ↗ {truncate(c.description || c.num || c.link, 45)}
+                        ↗ {truncate(c.description || c.num || url, 45)}
                       </a>
                     ) : (
                       <span key={c._id} style={{ fontSize: 12, color: '#9c9a92', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
-                        📎 {c.link}
+                        📎 {url}
                       </span>
                     )
                   ))}
@@ -2627,13 +2649,6 @@ export function LegalShell({ project }: { project: FullProject }) {
       <div className="la-main">
         <div className="la-topbar">
           <div className="la-topbar-title">{meta.title}</div>
-          <div className="la-search">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <circle cx="5" cy="5" r="4" stroke="#9c9a92" strokeWidth="1.2"/>
-              <path d="M8.5 8.5l2 2" stroke="#9c9a92" strokeWidth="1.2" strokeLinecap="round"/>
-            </svg>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar casos, clientes…" />
-          </div>
           {meta.action && (
             <button className="la-btn la-btn-primary" onClick={meta.onAction} style={{ flexShrink: 0 }}>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -2671,7 +2686,7 @@ export function LegalShell({ project }: { project: FullProject }) {
             projectId={project.id} spreadsheetId={project.spreadsheetId}
             section={section} sectionIdx={sectionIdx >= 0 ? sectionIdx : 0}
             setCases={setCases} />}
-          {view === 'documentos' && <DocumentosView cases={cases} />}
+          {view === 'documentos' && <DocumentosView cases={cases} section={section} />}
           {view === 'contratos'  && <ContratosView cases={cases} />}
           {view === 'equipo'     && <EquipoView cases={cases} />}
           {view === 'detail' && detailCase && (
